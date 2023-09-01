@@ -1,0 +1,251 @@
+{
+  "containers": {
+    "00145": {
+      "groupId": "Factory_nearBalloon_2"
+    },
+    "00146": {
+      "groupId": "NearWithExit_2_factory"
+    },
+    "00147": {
+      "groupId": "CasesN2_2_factory"
+    },
+    "00148": {
+      "groupId": "CaseN3"
+    },
+    "00149": {
+      "groupId": "WoodenBoxN1_3_factory"
+    },
+    "00150": {
+      "groupId": "WoodenBoxN2_3_factory"
+    },
+    "00151": {
+      "groupId": ""
+    },
+    "00152": {
+      "groupId": ""
+    },
+    "00153": {
+      "groupId": ""
+    },
+    "00154": {
+      "groupId": ""
+    },
+    "00155": {
+      "groupId": ""
+    },
+    "00156": {
+      "groupId": ""
+    },
+    "00157": {
+      "groupId": ""
+    },
+    "00158": {
+      "groupId": ""
+    },
+    "00159": {
+      "groupId": ""
+    },
+    "00160": {
+      "groupId": ""
+    },
+    "00161": {
+      "groupId": ""
+    },
+    "00162": {
+      "groupId": ""
+    },
+    "00163": {
+      "groupId": ""
+    },
+    "00164": {
+      "groupId": ""
+    },
+    "00165": {
+      "groupId": ""
+    },
+    "00166": {
+      "groupId": ""
+    },
+    "00167": {
+      "groupId": ""
+    },
+    "00168": {
+      "groupId": ""
+    },
+    "00169": {
+      "groupId": ""
+    },
+    "00170": {
+      "groupId": ""
+    },
+    "00171": {
+      "groupId": ""
+    },
+    "00172": {
+      "groupId": ""
+    },
+    "00173": {
+      "groupId": ""
+    },
+    "00174": {
+      "groupId": ""
+    },
+    "00175": {
+      "groupId": ""
+    },
+    "00176": {
+      "groupId": ""
+    },
+    "00177": {
+      "groupId": ""
+    },
+    "00178": {
+      "groupId": "ToolkitboxN1_2_factory"
+    },
+    "00179": {
+      "groupId": "MedKitN1_2_factory"
+    },
+    "00180": {
+      "groupId": "WoodenBox_N3_3_factory"
+    },
+    "00181": {
+      "groupId": "bad_sportN1_2_factory"
+    },
+    "00182": {
+      "groupId": ""
+    },
+    "00183": {
+      "groupId": ""
+    },
+    "00184": {
+      "groupId": "WoodeenBoxN2_2"
+    },
+    "00185": {
+      "groupId": ""
+    },
+    "00186": {
+      "groupId": ""
+    },
+    "00187": {
+      "groupId": ""
+    },
+    "00188": {
+      "groupId": ""
+    },
+    "00189": {
+      "groupId": ""
+    },
+    "00190": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00001": {
+      "groupId": "Factory_nearBalloon_2"
+    },
+    "container_Factory_DesignStuff_00002": {
+      "groupId": "NearWithExit_2_factory"
+    },
+    "container_Factory_DesignStuff_00003": {
+      "groupId": "CasesN2_2_factory"
+    },
+    "container_Factory_DesignStuff_00004": {
+      "groupId": "CaseN3"
+    },
+    "container_Factory_DesignStuff_00005": {
+      "groupId": "WoodenBoxN1_3_factory"
+    },
+    "container_Factory_DesignStuff_00006": {
+      "groupId": "WoodenBoxN1_3_factory"
+    },
+    "container_Factory_DesignStuff_00007": {
+      "groupId": "WoodenBoxN2_3_factory"
+    },
+    "container_Factory_DesignStuff_00008": {
+      "groupId": "WoodenBoxN2_3_factory"
+    },
+    "container_Factory_DesignStuff_00009": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00010": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00011": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00012": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00013": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00014": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00015": {
+      "groupId": ""
+    },
+    "container_Factory_DesignStuff_00016": {
+      "groupId": "ToolkitboxN1_2_factory"
+    },
+    "container_Factory_DesignStuff_00017": {
+      "groupId": "MedKitN1_2_factory"
+    },
+    "container_Factory_DesignStuff_00018": {
+      "groupId": "WoodenBox_N3_3_factory"
+    },
+    "container_Factory_DesignStuff_00019": {
+      "groupId": "WoodenBox_N3_3_factory"
+    },
+    "container_Factory_DesignStuff_00020": {
+      "groupId": "bad_sportN1_2_factory"
+    },
+    "container_Factory_DesignStuff_00021": {
+      "groupId": "WoodeenBoxN2_2"
+    }
+  },
+  "containersGroups": {
+    "CaseN3": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "CasesN2_2_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "Factory_nearBalloon_2": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "MedKitN1_2_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "NearWithExit_2_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "ToolkitboxN1_2_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "WoodeenBoxN2_2": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "WoodenBoxN1_3_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "WoodenBoxN2_3_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "WoodenBox_N3_3_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    },
+    "bad_sportN1_2_factory": {
+      "maxContainers": 2,
+      "minContainers": 0
+    }
+  }
+}
