@@ -12,12 +12,23 @@ namespace SIT.WebServer.Controllers
 
         [Route("client/game/start", Name = "GameStart")]
         [HttpPost]
-        public async void Start()
+        public async void Start(int? retry, bool? debug)
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+
             await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-                new Dictionary<string, object>() { { "utc_time", DateTime.UtcNow.Ticks / 1000 } }
-                , Response);
+                new Dictionary<string, object>() { { "utc_time", (int)timeSpan.TotalSeconds } }
+                , Request, Response);
+
+        }
+
+        [Route("client/game/version/validate")]
+        [HttpPost]
+        public async void VersionValidate(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
         }
     }
 }

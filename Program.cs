@@ -17,6 +17,7 @@ namespace SIT.WebServer
             {
                 serverOptions.ConfigureEndpointDefaults(listenOptions =>
                 {
+                    //listenOptions.IPEndPoint.Address = new System.Net.IPAddress()
                     listenOptions.IPEndPoint.Port = int.Parse(httpConfigSettings["port"].ToString());
                 });
             });
@@ -43,6 +44,7 @@ namespace SIT.WebServer
             }
 
             app.UseAuthorization();
+            //app.UseSession(new SessionOptions() { IdleTimeout = new TimeSpan(1,1,1,1) });
 
             app.MapControllers();
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Server.HttpSys;
 using Newtonsoft.Json;
 using SIT.WebServer.Middleware;
 using SIT.WebServer.Providers;
@@ -26,10 +27,13 @@ namespace SIT.WebServer.Controllers
         public async void Login()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return;
+
             if (saveProvider.ProfileExists(requestBody["username"].ToString(), out var sessionId))
-                await HttpBodyConverters.CompressStringIntoResponseBody(sessionId, Response);
+                await HttpBodyConverters.CompressStringIntoResponseBody(sessionId, Request, Response);
             else
-                await HttpBodyConverters.CompressStringIntoResponseBody("FAILED", Response);
+                await HttpBodyConverters.CompressStringIntoResponseBody("FAILED", Request, Response);
         }
 
         /// <summary>
@@ -42,7 +46,10 @@ namespace SIT.WebServer.Controllers
         public async void Register()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-            await HttpBodyConverters.CompressStringIntoResponseBody(saveProvider.CreateAccount(requestBody), Response);
+            var sessionId = saveProvider.CreateAccount(requestBody);
+            if (sessionId == null) 
+                return;
+            await HttpBodyConverters.CompressStringIntoResponseBody(sessionId, Request, Response);
         }
     }
 }

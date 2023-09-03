@@ -34,6 +34,9 @@ namespace SIT.WebServer.Providers
 
         public string CreateAccount(Dictionary<string, object> parameters)
         {
+            if (parameters == null)
+                return null;
+
             var sessionId = new MongoID(true).ToString();
             var newProfileDetails = new Dictionary<string, object>()
             {
