@@ -1,6 +1,10 @@
 ﻿using ComponentAce.Compression.Libs.zlib;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Diagnostics;
+using System.Dynamic;
 using System.IO.Compression;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -11,12 +15,82 @@ namespace SIT.WebServer.Middleware
     {
         public static async Task<Dictionary<string, object>> DecompressRequestBodyToDictionary(HttpRequest request)
         {
-            using var stream = request.Body;
-            using ZLibStream zLibStream = new ZLibStream(stream, CompressionMode.Decompress);
-            byte[] buffer = new byte[4096];
-            await zLibStream.ReadAsync(buffer, 0, buffer.Length);
-            var str = Encoding.UTF8.GetString(buffer);
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
+            if (!request.Body.CanSeek)
+                request.EnableBuffering();
+
+            request.Body.Position = 0;
+            var reader = new StreamReader(request.Body, Encoding.UTF8);
+            var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+            request.Body.Position = 0;
+
+            // This is the only way to handle Zlib versus Standard Json calls
+            try
+            {
+                using ZLibStream zLibStream = new ZLibStream(request.Body, CompressionMode.Decompress);
+                byte[] buffer = new byte[4096];
+                await zLibStream.ReadAsync(buffer, 0, buffer.Length);
+                var str = Encoding.UTF8.GetString(buffer);
+                var resultDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
+                if (resultDict != null)
+                    return resultDict;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                Debug.WriteLine(ex.ToString());
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(body);
+            }
+            catch
+            {
+                return null;
+            }
+          
+        }
+
+        public static async Task<(string, dynamic)> DecompressRequestBody(HttpRequest request)
+        {
+            if (!request.Body.CanSeek)
+                request.EnableBuffering();
+
+            request.Body.Position = 0;
+            var reader = new StreamReader(request.Body, Encoding.UTF8);
+            string resultString = await reader.ReadToEndAsync().ConfigureAwait(false);
+            request.Body.Position = 0;
+
+            dynamic resultDynamic = new ExpandoObject();
+
+            // This is the only way to handle Zlib versus Standard Json calls
+            try
+            {
+                using ZLibStream zLibStream = new ZLibStream(request.Body, CompressionMode.Decompress);
+                byte[] buffer = new byte[4096];
+                await zLibStream.ReadAsync(buffer, 0, buffer.Length);
+                resultString = Encoding.UTF8.GetString(buffer);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                Debug.WriteLine(ex.ToString());
+            }
+
+            try
+            {
+                if (resultString.StartsWith("{"))
+                    resultDynamic = JObject.Parse(resultString);
+                else if (resultString.StartsWith("["))
+                    resultDynamic = JArray.Parse(resultString);
+            }
+            catch
+            {
+            }
+
+            return (resultString, resultDynamic);
+
+
         }
 
         public static async Task CompressDictionaryIntoResponseBody(Dictionary<string, object> dictionary, HttpRequest request, HttpResponse response)

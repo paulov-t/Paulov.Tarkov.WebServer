@@ -54,6 +54,8 @@ namespace SIT.WebServer
             app.MapControllers();
 
             app.Run();
+
+            SaveProvider saveProvider = new SaveProvider(); 
         }
     }
 }

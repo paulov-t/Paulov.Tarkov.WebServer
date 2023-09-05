@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.WebServer.BSG;
+using System.Dynamic;
 
 namespace SIT.WebServer.Providers
 {
@@ -9,13 +10,13 @@ namespace SIT.WebServer.Providers
     {
         public static Random Randomizer { get; } = new Random();
 
-        static SaveProvider()
-        {
-            var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
-            Directory.CreateDirectory(userProfileDirectory);
+        //static SaveProvider()
+        //{
+        //    var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
+        //    Directory.CreateDirectory(userProfileDirectory);
 
             
-        }
+        //}
 
         public SaveProvider()
         {
@@ -24,12 +25,19 @@ namespace SIT.WebServer.Providers
             foreach (var profileFilePath in profileFiles)
             {
                 var fileInfo = new FileInfo(profileFilePath);
+                if (fileInfo == null)
+                    continue;
+
                 var fileText = File.ReadAllText(profileFilePath);
-                Profiles.Add(fileInfo.Name.Replace(".json",""), JsonConvert.DeserializeObject<Dictionary<string, object>>(fileText));
+                if (fileText == null)
+                    continue;
+
+                var model = JsonConvert.DeserializeObject<ProfileModel>(fileText);
+                Profiles.Add(fileInfo.Name.Replace(".json",""), model);
             }
         }
 
-        private Dictionary<string, object> Profiles { get; } = new Dictionary<string, object>();
+        private Dictionary<string, ProfileModel> Profiles { get; } = new Dictionary<string, ProfileModel>();
 
 
         public string CreateAccount(Dictionary<string, object> parameters)
@@ -55,44 +63,46 @@ namespace SIT.WebServer.Providers
             return sessionId;
         }
 
-        public void SaveProfile(string sessionId)
+        public void SaveProfile(string sessionId, ProfileModel profileModel = null)
         {
+            if(profileModel != null)
+                Profiles[sessionId] = profileModel;
+
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
             File.WriteAllText(filePath, JsonConvert.SerializeObject(Profiles[sessionId]));
         }
 
-        public Dictionary<string, object> LoadProfile(string sessionId)
+        public ProfileModel LoadProfile(string sessionId)
         {
-            var prof = Profiles[sessionId] as Dictionary<string, object>;
+            if(sessionId == null) return null;
+
+            var prof = Profiles[sessionId] as ProfileModel;
             return prof;
         }
 
-        public JToken GetPmcProfile(string sessionId)
+        public Dictionary<string, object> GetPmcProfile(string sessionId)
         {
-            var prof = Profiles[sessionId] as Dictionary<string, object>;
-            var characters = prof["characters"] as JObject;
+            var prof = Profiles[sessionId] as ProfileModel;
+            var characters = prof.Characters;
             var pmcObject = characters["pmc"];
             return pmcObject;
         }
 
         private void CreateProfile(Dictionary<string, object> newProfileDetails)
         {
-            var newProfile = new Dictionary<string, object>()
-            {
-                { "info", newProfileDetails },
-                { "characters", new Dictionary<string, object>() { { "pmc", new Dictionary<string, object>() }, { "scav", new Dictionary<string, object>() } } }
-            };
+            var newProfile = new ProfileModel();
+            newProfile.Info = newProfileDetails;
             Profiles.Add(newProfileDetails["id"].ToString(), newProfile);
         }
 
         public bool ProfileExists(string username, out string sessionId)
         {
             sessionId = null;
-            foreach (var profile in Profiles.Values.Select(x => (Dictionary<string, object>)x))
+            foreach (var profile in Profiles.Values)
             {
-                var info = (JObject)profile["info"];
+                var info = profile.Info;
                 var infoUsername = info["username"].ToString();
                 if (info["username"].ToString() == username)
                 {
@@ -107,9 +117,9 @@ namespace SIT.WebServer.Providers
 
         public bool NameExists(string username)
         {
-            foreach (var profile in Profiles.Values.Select(x => (Dictionary<string, object>)x))
+            foreach (var profile in Profiles.Values)
             {
-                var info = (JObject)profile["info"];
+                var info = profile.Info;
                 var infoUsername = info["username"].ToString();
                 if (info["username"].ToString() == username)
                     return true;
@@ -118,13 +128,24 @@ namespace SIT.WebServer.Providers
             return false;
         }
 
-        public class SaveModel
+        public class ProfileModel : DynamicObject
         {
             [JsonProperty("info")]
-            public Dictionary<string, object> Info = new Dictionary<string, object>();
+            public Dictionary<string, dynamic> Info = new Dictionary<string, dynamic>();
+
+            public int AccountId => int.Parse(Info["id"].ToString());
 
             [JsonProperty("characters")]
-            public Dictionary<string, object> Characters = new Dictionary<string, object>();
+            public Dictionary<string, Dictionary<string, dynamic>> Characters = new Dictionary<string, Dictionary<string, dynamic>>()
+            {
+                { "pmc", new Dictionary<string, dynamic>() },
+                { "scav", new Dictionary<string, dynamic>() }
+            };
+
+            //public class ProfileCharacterModel
+            //{
+                
+            //}
         }
     }
 }

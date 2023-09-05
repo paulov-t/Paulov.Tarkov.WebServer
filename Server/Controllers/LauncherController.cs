@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Server.HttpSys;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SIT.WebServer.Middleware;
 using SIT.WebServer.Providers;
 using System.IO.Compression;
@@ -41,14 +42,24 @@ namespace SIT.WebServer.Controllers
             }
             if (string.IsNullOrEmpty(resolvedUserName))
             {
-                Response.StatusCode = 405; // unauthorized
+                Response.StatusCode = 401; // unauthorized
                 return;
+            }
+
+            if (Request.Cookies.ContainsKey("PHPSESSID"))
+            {
+                Response.Cookies.Delete("PHPSESSID");
             }
 
             if (saveProvider.ProfileExists(resolvedUserName, out var sessionId))
             {
+                Response.Cookies.Append("PHPSESSID", sessionId);
+
                 HttpContext.Session.Set("SessionId", Encoding.UTF8.GetBytes(sessionId));
-                saveProvider.LoadProfile(sessionId);
+                var profile = saveProvider.LoadProfile(sessionId);
+                int aid = int.Parse(profile.Info["aid"].ToString());
+                HttpContext.Session.SetInt32("AccountId", aid);
+
                 await HttpBodyConverters.CompressStringIntoResponseBody(sessionId, Request, Response);
             }
             else

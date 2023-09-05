@@ -8,11 +8,12 @@ namespace SIT.WebServer.Providers
     {
         public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "assets", "database"); } }
 
-        public static Dictionary<string, object> Database { get; } = new Dictionary<string, object>();  
+        public static Dictionary<string, object> Database { get; } = new Dictionary<string, object>();
 
         static DatabaseProvider()
         {
             //TryLoadLocales(out _, out _, out _);
+            TryLoadLocations(out _);
         }
 
 
@@ -112,8 +113,8 @@ namespace SIT.WebServer.Providers
         /// <param name="page">Used for Swagger tests - page</param>
         /// <returns></returns>
         public static bool TryLoadItemTemplates(
-          
-          //out Dictionary<string, object> templates,
+
+            //out Dictionary<string, object> templates,
             out string templatesRaw,
             in int? count = null,
             in int? page = null
@@ -123,24 +124,6 @@ namespace SIT.WebServer.Providers
 
             var stringTemplates = File.ReadAllText(itemsPath);
 
-            //            templates = new();
-            //            var templatesRaw = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(stringTemplates);
-            //            foreach(var template in templatesRaw)
-            //            {
-            //                templates[template.Key] = template.Value;
-            //            }
-
-            //            // Used for Swagger tests
-            //            if(count.HasValue && page.HasValue)
-            //            {
-            //                templates = templates.Take(count.Value).ToDictionary(x => x.Key, x => x.Value);
-            //            }
-
-            //#if DEBUG
-            //            var templateToCheck = templates["5447a9cd4bdc2dbd208b4567"];
-            //#endif
-
-            //            return templates != null && templates.Count > 0;
             templatesRaw = stringTemplates;
             return templatesRaw != null;
         }
@@ -156,6 +139,26 @@ namespace SIT.WebServer.Providers
         {
             return TryLoadDatabaseFile("globals.json", out globals);
         }
+
+        public static bool TryLoadLocations(
+         out Dictionary<string, Dictionary<string, object>> locations)
+        {
+            Dictionary<string, Dictionary<string,object>> locationsRaw = new();
+            foreach (var dir in Directory.GetDirectories(Path.Combine(DatabaseAssetPath, "locations")).Select(x => new DirectoryInfo(x)))
+            {
+                locationsRaw.Add(dir.Name, new Dictionary<string, object>());
+                foreach (var f in Directory.GetFiles(dir.FullName).Select(x => new FileInfo(x)))
+                {
+                    locationsRaw[dir.Name].Add(f.Name, JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(f.FullName)));
+                }
+            }
+
+            if(!Database.ContainsKey("locations"))
+                Database.Add("locations", locationsRaw);
+
+            locations = locationsRaw;
+            return locations.Count > 0;
+        }
     }
-   
+
 }
