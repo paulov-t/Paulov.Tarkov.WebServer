@@ -322,6 +322,7 @@ namespace SIT.WebServer.Controllers
             saveProvider.SaveProfile(SessionId, profile);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(profile), Request, Response);
+            requestBody = null;
 
         }
 
@@ -347,6 +348,7 @@ namespace SIT.WebServer.Controllers
 
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
+            requestBody = null;
         }
 
         [Route("client/profile/status")]
@@ -370,6 +372,7 @@ namespace SIT.WebServer.Controllers
             response.Add("profiles", responseProfiles);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
+            requestBody = null;
         }
 
         [Route("client/locations")]
