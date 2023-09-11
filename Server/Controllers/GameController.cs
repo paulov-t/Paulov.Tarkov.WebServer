@@ -66,7 +66,7 @@ namespace SIT.WebServer.Controllers
 #pragma warning disable SYSLIB0014 // Type or member is obsolete
             //string externalIP = new System.Net.WebClient().DownloadString("https://api.ipify.org");
             string protocol = "http://";
-            string externalIP = "127.0.0.1";// new System.Net.WebClient().DownloadString("https://api.ipify.org");
+            string externalIP = Program.publicIp;
             string port = "6969";
 
             string resolvedIp = $"{protocol}{externalIP}:{port}";
