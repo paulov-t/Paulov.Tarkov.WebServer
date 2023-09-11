@@ -13,15 +13,23 @@
             return "";
         }
 
-        public static string GetSessionId(IHeaderDictionary HttpHeaders)
+        public static string GetSessionId(HttpRequest requests)
         {
+            IHeaderDictionary HttpHeaders = requests.Headers;
             if (HttpHeaders.ContainsKey("Cookie"))
             {
+                Dictionary<string, string> HeaderCookie = new Dictionary<string, string>();
                 var Cookie = HttpHeaders["Cookie"].ToString();
-                var SessionId = Cookie.Split("=")[1];
-                return SessionId;
+                foreach(var cookieSplitComma in Cookie.Split(',')) 
+                { 
+                    HeaderCookie.Add(Cookie.Split("=")[0], Cookie.Split("=")[1]);
+                }
+
+                if(HeaderCookie.ContainsKey("PHPSESSID"))
+                    return HeaderCookie["PHPSESSID"];
             }
-            return "";
+
+            return null;
         }
     }
 }

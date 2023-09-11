@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.IO;
 
 namespace SIT.WebServer.Providers
 {
@@ -13,7 +14,19 @@ namespace SIT.WebServer.Providers
         static DatabaseProvider()
         {
             //TryLoadLocales(out _, out _, out _);
-            TryLoadLocations(out _);
+            //TryLoadLocations(out _);
+        }
+
+        private static T StreamFileToType<T>(string path)
+        {
+            using (var readerLanguagesJson = new StreamReader(path))
+            {
+                using (var readerLanguagesJsonTR = new JsonTextReader(readerLanguagesJson))
+                {
+                    var serializer = new JsonSerializer();
+                    return serializer.Deserialize<T>(readerLanguagesJsonTR);
+                }
+            }
         }
 
 
@@ -28,7 +41,8 @@ namespace SIT.WebServer.Providers
 
             locales = new();
             localesDict = new();
-            languages = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(Path.Combine(localesPath, "languages.json")));
+            languages = StreamFileToType<Dictionary<string, object>>(Path.Combine(localesPath, "languages.json"));
+
             string basePath = localesPath;
             var dirs = Directory.GetDirectories(localesPath);
             foreach (var dir in dirs)
@@ -38,14 +52,29 @@ namespace SIT.WebServer.Providers
                 {
                     string localename = dir.Replace(basePath + "\\", "");
                     string localename_add = file.Replace(dir + "\\", "").Replace(".json", "");
-                    locales.Add(localename + "_" + localename_add, File.ReadAllText(file));
-                    localesDict.Add(localename + "_" + localename_add, JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(file)));
+
+                    using (var sr = new StreamReader(file))
+                        locales.Add(localename + "_" + localename_add, sr.ReadToEnd());
+
+                    //localesDict.Add(localename + "_" + localename_add, JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(file)));
+                    localesDict.Add(localename + "_" + localename_add, StreamFileToType<Dictionary<string, object>>(file));
+
 
                     result = true;
                 }
+                files = null;
             }
+            dirs = null;
 
             return result;
+        }
+
+        public static bool TryLoadLanguages(
+            out JObject languages)
+        {
+            var localesPath = Path.Combine(DatabaseAssetPath, "locales");
+            languages = JObject.Parse(File.ReadAllText((Path.Combine(localesPath, "languages.json"))));
+            return true;
         }
 
         public static bool TryLoadDatabaseFile(
@@ -72,6 +101,19 @@ namespace SIT.WebServer.Providers
             var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
 
             dbFile = JObject.Parse(File.ReadAllText(filePath));
+            result = dbFile != null;
+            return result;
+        }
+
+        public static bool TryLoadDatabaseFile(
+        in string databaseFilePath,
+        out JArray dbFile)
+        {
+            bool result = false;
+
+            var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
+
+            dbFile = JArray.Parse(File.ReadAllText(filePath));
             result = dbFile != null;
             return result;
         }
@@ -158,6 +200,13 @@ namespace SIT.WebServer.Providers
 
             locations = locationsRaw;
             return locations.Count > 0;
+        }
+
+        public static bool TryLoadWeather(
+         out Dictionary<string, Dictionary<string, object>> weather)
+        {
+            weather = new();
+            return true;
         }
     }
 

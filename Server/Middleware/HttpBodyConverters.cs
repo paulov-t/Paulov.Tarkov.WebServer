@@ -125,11 +125,14 @@ namespace SIT.WebServer.Middleware
                 {
                     var bytes = new byte[(1024 * 1024) * 50];
                     Pooled9LevelZLib.CompressToBytesNonAlloc(stringToConvert, bytes);
+                    //bytes = SimpleZlib.CompressToBytes(stringToConvert, 9);
                     //var stream = new StreamWriter(new MemoryStream());
                     //stream.Write(bytes);
                     //stream.Flush();
-                    response.Headers.ContentLength = bytes.Length;
-                    await response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(bytes));
+
+                    var rom = new ReadOnlyMemory<byte>(bytes);
+                    response.Headers.ContentLength = rom.Length;
+                    await response.BodyWriter.WriteAsync(rom);
                     bytes = null;
                     GC.Collect();
                 }
@@ -175,6 +178,15 @@ namespace SIT.WebServer.Middleware
             BSGResponse.Add("errmsg", null);
             BSGResponse.Add("data", dictionary);
             await CompressDictionaryIntoResponseBody(BSGResponse, request, response);
+        }
+
+        public static void CompressIntoResponseBodyBSG(Dictionary<string, object> dictionary, ref HttpRequest request, ref HttpResponse response)
+        {
+            Dictionary<string, object> BSGResponse = new Dictionary<string, object>();
+            BSGResponse.Add("err", 0);
+            BSGResponse.Add("errmsg", null);
+            BSGResponse.Add("data", dictionary);
+            CompressDictionaryIntoResponseBody(BSGResponse, request, response).RunSynchronously();
         }
 
         public static async Task CompressIntoResponseBodyBSG(JObject obj, HttpRequest request, HttpResponse response)

@@ -4,6 +4,8 @@ using SIT.WebServer.Providers;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Text;
 
 namespace SIT.WebServer
 {
@@ -61,11 +63,32 @@ namespace SIT.WebServer
             var app = builder.Build();
             //app.UseRequestDecompression();
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            //if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.ToString().StartsWith("/notifierServer/getwebsocket"))
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                    {
+                        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                        await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("")), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
+                        await Echo(webSocket);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    }
+                }
+                else
+                {
+                    await next(context);
+                }
+            });
 
             app.UseAuthorization();
             app.UseSession(new SessionOptions() { IdleTimeout = new TimeSpan(1, 1, 1, 1) });
@@ -75,6 +98,30 @@ namespace SIT.WebServer
             app.Run();
 
             SaveProvider saveProvider = new SaveProvider(); 
+        }
+
+        private static async Task Echo(WebSocket webSocket)
+        {
+            var buffer = new byte[1024 * 4];
+            var receiveResult = await webSocket.ReceiveAsync(
+                new ArraySegment<byte>(buffer), CancellationToken.None);
+
+            while (!receiveResult.CloseStatus.HasValue)
+            {
+                await webSocket.SendAsync(
+                    new ArraySegment<byte>(buffer, 0, receiveResult.Count),
+                    receiveResult.MessageType,
+                    receiveResult.EndOfMessage,
+                    CancellationToken.None);
+
+                receiveResult = await webSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer), CancellationToken.None);
+            }
+
+            await webSocket.CloseAsync(
+                receiveResult.CloseStatus.Value,
+                receiveResult.CloseStatusDescription,
+                CancellationToken.None);
         }
 
         /**

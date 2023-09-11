@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Rewrite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.WebServer.Middleware;
@@ -22,8 +23,10 @@ namespace SIT.WebServer.Controllers
         {
             get
             {
-                var sessId = HttpContext.Session.GetString("SessionId");
-                return sessId;
+                var sessionId = HttpContext.Session.GetString("SessionId");
+                if (sessionId == null)
+                    sessionId = HttpSession.GetSessionId(Request);
+                return sessionId;
             }
         }
 
@@ -72,7 +75,7 @@ namespace SIT.WebServer.Controllers
             string resolvedIp = $"{protocol}{externalIP}:{port}";
 #pragma warning restore SYSLIB0014 // Type or member is obsolete
 
-            var sessionId = HttpSession.GetSessionId(Request.Headers);
+            var sessionId = HttpSession.GetSessionId(Request);
             if (string.IsNullOrEmpty(sessionId))
             {
                 if (HttpContext.Session.TryGetValue("SessionId", out var sessionIdBytes))
@@ -103,7 +106,7 @@ namespace SIT.WebServer.Controllers
                 , { "reportAvailable", false }
                 , { "twitchEventMember", false }
                 , { "lang", "en" }
-                , { "aid", sessionId }
+                , { "aid", profile.AccountId }
                 , { "taxonomy", 6 }
                 , { "activeProfileId", $"pmc{sessionId}" }
                 , { "backend",
@@ -172,6 +175,8 @@ namespace SIT.WebServer.Controllers
         public async void ProfileList(int? retry, bool? debug)
         {
             var sessionId = HttpContext.Session.GetString("SessionId");
+            if (sessionId == null)
+                sessionId = HttpSession.GetSessionId(Request);
 
             var profile = saveProvider.LoadProfile(sessionId);
             if (profile == null)
@@ -186,11 +191,13 @@ namespace SIT.WebServer.Controllers
                 List<object> list = new List<object>();
                 if ((bool)profileInfo["wipe"])
                 {
+
                 }
                 else
                 {
                     list.Add(saveProvider.GetPmcProfile(sessionId));
                     list.Add(saveProvider.GetPmcProfile(sessionId));
+                    //list.Add(saveProvider.GetScavProfile(sessionId));
                 }
                 await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(list), Request, Response);
             }
@@ -256,10 +263,6 @@ namespace SIT.WebServer.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            //var requestBody2 = await HttpBodyConverters.DecompressRequestBody(Request);
-
-
-
             var profile = saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
@@ -291,7 +294,7 @@ namespace SIT.WebServer.Controllers
 
             var pmcData = ((JToken)templateProfile["character"]).ToObject<Dictionary<string, dynamic>>();
             pmcData["_id"] = $"pmc{SessionId}";
-            pmcData["aid"] = $"{AccountId}";
+            pmcData["aid"] = $"{profile.AccountId}";
             pmcData["savage"] = $"scav{SessionId}";
             pmcData["sessionId"] = $"{SessionId}";
             if (requestBody == null)
@@ -318,7 +321,10 @@ namespace SIT.WebServer.Controllers
             pmcData["Customization"] = pmcCustomizationInfo;
 
             profile.Characters["pmc"] = pmcData;
+            profile.Characters["scav"] = pmcData;
             profile.Info["wipe"] = false;
+
+            saveProvider.CleanIdsOfInventory(profile);
             saveProvider.SaveProfile(SessionId, profile);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(profile), Request, Response);
@@ -337,16 +343,9 @@ namespace SIT.WebServer.Controllers
 
             Dictionary<string, dynamic> response = new();
             response.Add("status", "ok");
-            Dictionary<string, dynamic> responseNotifier = new();
-            responseNotifier.Add("server", "");
-            responseNotifier.Add("channel_id", $"{SessionId}");
-            responseNotifier.Add("url", "");
-            responseNotifier.Add("notifierServer", "");
-            responseNotifier.Add("ws", "");
+            Dictionary<string, dynamic> responseNotifier = new NotifierProvider().CreateNotifierPacket(SessionId);
             response.Add("notifier", responseNotifier);
-            response.Add("notifierServer", $"http://127.0.0.1/notifierServer/get/{SessionId}");
-
-
+            response.Add("notifierServer", $"{responseNotifier["notifierServer"]}");
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
             requestBody = null;
         }
@@ -392,13 +391,172 @@ namespace SIT.WebServer.Controllers
 
             Dictionary<string, Dictionary<string, object>> response = new();
 
-            foreach (var kvp in locations) 
+            foreach (var kvp in locations)
             {
-            
+
             }
 
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
+        }
+
+        [Route("client/weather")]
+        [HttpPost]
+        public async void Weather(
+          [FromQuery] int? retry
+      , [FromQuery] bool? debug
+         )
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBody(Request);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new WeatherProvider.WeatherClass()), Request, Response);
+        }
+
+
+        [Route("client/handbook/templates")]
+        [HttpPost]
+        public async void HandbookTemplates(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadTemplateFile("handbook.json", out var templates);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(templates), Request, Response);
+
+        }
+
+        [Route("client/hideout/areas")]
+        [HttpPost]
+        public async void HideoutAreas(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "areas.json"), out JArray jobj);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+
+        }
+
+
+        [Route("client/hideout/qte/list")]
+        [HttpPost]
+        public async void HideoutQTEList(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "qte.json"), out JArray jobj);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+
+        }
+
+
+        [Route("client/hideout/settings")]
+        [HttpPost]
+        public async void HideoutSettings(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "settings.json"), out JObject jobj);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+
+        }
+
+        [Route("client/hideout/production")]
+        [Route("client/hideout/production/recipes")]
+        [HttpPost]
+        public async void HideoutProduction(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JArray jobj);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+
+        }
+
+        [Route("client/hideout/scavcase")]
+        [Route("client/hideout/production/scavcase/recipes")]
+        [HttpPost]
+        public async void HideoutScavcase(int? retry, bool? debug)
+        {
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "scavcase.json"), out JArray jobj);
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+
+        }
+
+        [Route("client/handbook/builds/my/list")]
+        [HttpPost]
+        public async void UserPresets(int? retry, bool? debug)
+        {
+            Dictionary<string, object> nullResult = new Dictionary<string, object>();
+            nullResult.Add("equipmentBuilds", new JArray());
+            nullResult.Add("weaponBuilds", new JArray());
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(nullResult), Request, Response);
+
+        }
+
+        [Route("client/notifier/channel/create")]
+        [HttpPost]
+        public async void NotifierChannelCreate(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new NotifierProvider().CreateNotifierPacket(SessionId)), Request, Response);
+
+        }
+
+        
+
+        //
+        //
+        //
+
+
+        [Route("client/mail/dialog/list")]
+        [HttpPost]
+        public async void MailDialogList(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
+        }
+
+        [Route("client/trading/customization/storage")]
+        [HttpPost]
+        public async void CustomizationStorage(int? retry, bool? debug)
+        {
+            Dictionary<string, object> nullResult = new Dictionary<string, object>();
+            nullResult.Add("_id", $"pmc{SessionId}");
+            nullResult.Add("suites", saveProvider.LoadProfile(SessionId).Suits);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(nullResult), Request, Response);
+        }
+
+        [Route("client/friend/request/list/inbox")]
+        [HttpPost]
+        public async void FriendRequestInbox(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
+        }
+
+        [Route("client/friend/request/list/outbox")]
+        [HttpPost]
+        public async void FriendRequestOutbox(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
+        }
+
+        [Route("client/friend/list")]
+        [HttpPost]
+        public async void FriendList(int? retry, bool? debug)
+        {
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            packet.Add("Friends", new JArray());
+            packet.Add("Ignore", new JArray());
+            packet.Add("InIgnoreList", new JArray());
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
+
+        [Route("client/server/list")]
+        [HttpPost]
+        public async void ServerList(int? retry, bool? debug)
+        {
+            string externalIP = Program.publicIp;
+            string port = "6969";
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            packet.Add("ip", externalIP);
+            packet.Add("port", port);
+
+            var packets = new List<Dictionary<string, object>>();
+            packets.Add(packet);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packets), Request, Response);
         }
     }
 }

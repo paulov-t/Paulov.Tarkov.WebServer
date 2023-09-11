@@ -3,20 +3,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.WebServer.BSG;
 using System.Dynamic;
+using System.Net.WebSockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SIT.WebServer.Providers
 {
     public class SaveProvider
     {
         public static Random Randomizer { get; } = new Random();
-
-        //static SaveProvider()
-        //{
-        //    var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
-        //    Directory.CreateDirectory(userProfileDirectory);
-
-            
-        //}
 
         public SaveProvider()
         {
@@ -79,6 +73,8 @@ namespace SIT.WebServer.Providers
             if(sessionId == null) return null;
 
             var prof = Profiles[sessionId] as ProfileModel;
+            CleanIdsOfInventory(prof);
+
             return prof;
         }
 
@@ -88,6 +84,14 @@ namespace SIT.WebServer.Providers
             var characters = prof.Characters;
             var pmcObject = characters["pmc"];
             return pmcObject;
+        }
+
+        public Dictionary<string, object> GetScavProfile(string sessionId)
+        {
+            var prof = Profiles[sessionId] as ProfileModel;
+            var characters = prof.Characters;
+            var scavObject = characters["scav"];
+            return scavObject;
         }
 
         private void CreateProfile(Dictionary<string, object> newProfileDetails)
@@ -128,23 +132,115 @@ namespace SIT.WebServer.Providers
             return false;
         }
 
+        public void CleanIdsOfInventory(ProfileModel profile)
+        {
+            if (profile == null) 
+                return;
+
+            if (profile.Characters.ContainsKey("pmc") && !profile.Characters["pmc"].ContainsKey("Inventory"))
+                return;
+
+            var inventory = profile.Characters["pmc"]["Inventory"];
+            CleanIdsOfItems(inventory);
+
+        }
+
+        public void CleanIdsOfItems(JToken inventory)
+        {
+            var equipmentId = inventory["equipment"].ToString();
+            var fastPanelId = inventory["fastPanel"].ToString();
+            var hideoutAreaStashesId = inventory["hideoutAreaStashes"].ToString();
+            var questRaidItemsId = inventory["questRaidItems"].ToString();
+            var questStashItemsId = inventory["questStashItems"].ToString();
+            var sortingTableId = inventory["sortingTable"].ToString();
+            var stashId = inventory["stash"].ToString();
+
+            Dictionary<string, string> remappedIds = new();
+            Dictionary<string, string> allRemappedIds = new();
+
+                remappedIds.Clear();
+                Dictionary<string, int> IdCounts = new();
+
+
+                foreach (var item in inventory["items"])
+                {
+                    if (item["_id"].ToString() == equipmentId)
+                        continue;
+
+                    if (item["_id"].ToString() == fastPanelId)
+                        continue;
+
+                    if (item["_id"].ToString() == hideoutAreaStashesId)
+                        continue;
+
+                    if (item["_id"].ToString() == questRaidItemsId)
+                        continue;
+
+                    if (item["_id"].ToString() == questStashItemsId)
+                        continue;
+
+                    if (item["_id"].ToString() == sortingTableId)
+                        continue;
+
+                    if (item["_id"].ToString() == stashId)
+                        continue;
+
+                    var oldId = item["_id"].ToString();
+                    var newId = MongoID.Generate();
+                    if (!remappedIds.ContainsKey(oldId))
+                    {
+                        remappedIds.Add(oldId, newId);
+                        item["_id"] = newId;
+                    }
+                }
+
+                foreach (var item in inventory["items"])
+                {
+                    var jO = item as JObject;
+                    if (jO.ContainsKey("parentId"))
+                    {
+                        if (remappedIds.ContainsKey(jO["parentId"].ToString()))
+                            jO["parentId"] = remappedIds[jO["parentId"].ToString()];
+
+                    }
+                }
+          
+
+        }
+
         public class ProfileModel : DynamicObject
         {
             [JsonProperty("info")]
             public Dictionary<string, dynamic> Info = new Dictionary<string, dynamic>();
 
-            public int AccountId => int.Parse(Info["id"].ToString());
+            public int AccountId => int.Parse(Info["aid"].ToString());
 
             [JsonProperty("characters")]
-            public Dictionary<string, Dictionary<string, dynamic>> Characters = new Dictionary<string, Dictionary<string, dynamic>>()
+            public Dictionary<string, Dictionary<string, dynamic>> Characters { get; set; } = new Dictionary<string, Dictionary<string, dynamic>>()
             {
                 { "pmc", new Dictionary<string, dynamic>() },
                 { "scav", new Dictionary<string, dynamic>() }
             };
 
+            [JsonProperty("suits")]
+            public HashSet<string> Suits { get; set; } = new()
+            {
+                "5cde9ec17d6c8b04723cf479",
+                "5cde9e957d6c8b0474535da7",
+            };
+
+            [JsonProperty("weaponbuilds")]
+            public JObject WeaponBuilds { get; set; } = new();
+
+            [JsonProperty("dialogues")]
+            public JObject Dialogues { get; set; } = new();
+
+            [JsonProperty("insurance")]
+            public JArray Insurance { get; set; } = new();
+
             //public class ProfileCharacterModel
             //{
-                
+
             //}
         }
     }

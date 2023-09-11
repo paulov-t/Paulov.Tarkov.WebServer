@@ -25,7 +25,7 @@ namespace SIT.WebServer.BSG
 
         public static string Generate()
         {
-            return smethod_0((ulong)TimeStamp, UInt64_0 << 24);
+            return smethod_0((ulong)TimeStamp, UInt64_0 << 24).Substring(0, 24);
         }
 
         private static string smethod_0(ulong timeStamp, ulong counter)

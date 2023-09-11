@@ -24,10 +24,18 @@ namespace SIT.WebServer.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            DatabaseProvider.TryLoadLocales(out var locales, out var localesDict, out var languages);
+            DatabaseProvider.TryLoadLanguages(out var languages);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(languages
-                , Request, Response);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(
+                languages
+                , Request
+                , Response);
+
+            //locales = null;
+            //localesDict = null;
+            //requestBody = null;
+            GC.Collect(GC.MaxGeneration);
+            //GC.WaitForFullGCComplete();
         }
 
         [Route("client/locale/{language}")]
@@ -36,8 +44,10 @@ namespace SIT.WebServer.Controllers
         {
             DatabaseProvider.TryLoadLocales(out var locales, out var localesDict, out var languages);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(localesDict["global_en"]
-                , Request, Response);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(
+                localesDict["global_en"]
+                , Request
+                , Response);
         }
     }
 }
