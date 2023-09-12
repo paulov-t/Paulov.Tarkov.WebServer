@@ -23,10 +23,7 @@ namespace SIT.WebServer.Controllers
         {
             get
             {
-                var sessionId = HttpContext.Session.GetString("SessionId");
-                if (sessionId == null)
-                    sessionId = HttpSession.GetSessionId(Request);
-                return sessionId;
+                return HttpSessionHelpers.GetSessionId(Request, HttpContext);
             }
         }
 
@@ -75,19 +72,7 @@ namespace SIT.WebServer.Controllers
             string resolvedIp = $"{protocol}{externalIP}:{port}";
 #pragma warning restore SYSLIB0014 // Type or member is obsolete
 
-            var sessionId = HttpSession.GetSessionId(Request);
-            if (string.IsNullOrEmpty(sessionId))
-            {
-                if (HttpContext.Session.TryGetValue("SessionId", out var sessionIdBytes))
-                {
-                    sessionId = Encoding.UTF8.GetString(sessionIdBytes);
-                }
-            }
-            else
-            {
-                HttpContext.Session.SetString("SessionId", sessionId);
-            }
-
+            var sessionId = SessionId;
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
@@ -174,9 +159,7 @@ namespace SIT.WebServer.Controllers
         [HttpPost]
         public async void ProfileList(int? retry, bool? debug)
         {
-            var sessionId = HttpContext.Session.GetString("SessionId");
-            if (sessionId == null)
-                sessionId = HttpSession.GetSessionId(Request);
+            var sessionId = SessionId;
 
             var profile = saveProvider.LoadProfile(sessionId);
             if (profile == null)
@@ -196,8 +179,8 @@ namespace SIT.WebServer.Controllers
                 else
                 {
                     list.Add(saveProvider.GetPmcProfile(sessionId));
-                    list.Add(saveProvider.GetPmcProfile(sessionId));
-                    //list.Add(saveProvider.GetScavProfile(sessionId));
+                    //list.Add(saveProvider.GetPmcProfile(sessionId));
+                    list.Add(saveProvider.GetScavProfile(sessionId));
                 }
                 await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(list), Request, Response);
             }
@@ -343,9 +326,17 @@ namespace SIT.WebServer.Controllers
 
             Dictionary<string, dynamic> response = new();
             response.Add("status", "ok");
-            Dictionary<string, dynamic> responseNotifier = new NotifierProvider().CreateNotifierPacket(SessionId);
-            response.Add("notifier", responseNotifier);
-            response.Add("notifierServer", $"{responseNotifier["notifierServer"]}");
+            try
+            {
+                Dictionary<string, dynamic> responseNotifier = new NotifierProvider().CreateNotifierPacket(SessionId);
+                response.Add("notifier", responseNotifier);
+                response.Add("notifierServer", $"{responseNotifier["notifierServer"]}");
+            }
+            catch (Exception)
+            {
+                response.Add("notifier", new JObject());
+                response.Add("notifierServer", new JObject());
+            }
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
             requestBody = null;
         }
@@ -364,8 +355,23 @@ namespace SIT.WebServer.Controllers
             List<Dictionary<string, dynamic>> responseProfiles = new();
             Dictionary<string, dynamic> profileScav = new();
             profileScav.Add("profileid", $"scav{SessionId}");
+            profileScav.Add("profileToken", null);
+            profileScav.Add("status", "Free");
+            profileScav.Add("sid", $"");
+            profileScav.Add("ip", $"");
+            profileScav.Add("port", 0);
+            profileScav.Add("version", "live");
+            profileScav.Add("location", "bigmap");
+            profileScav.Add("raidMode", "Online");
+            profileScav.Add("mode", "deathmatch");
+            profileScav.Add("shortId", "xxx1x1");
             Dictionary<string, dynamic> profilePmc = new();
             profilePmc.Add("profileid", $"pmc{SessionId}");
+            profilePmc.Add("profileToken", null);
+            profilePmc.Add("status", "Free");
+            profilePmc.Add("sid", $"");
+            profilePmc.Add("ip", $"");
+            profilePmc.Add("port", 0);
             responseProfiles.Add(profileScav);
             responseProfiles.Add(profilePmc);
             response.Add("profiles", responseProfiles);
@@ -513,10 +519,10 @@ namespace SIT.WebServer.Controllers
         [HttpPost]
         public async void CustomizationStorage(int? retry, bool? debug)
         {
-            Dictionary<string, object> nullResult = new Dictionary<string, object>();
-            nullResult.Add("_id", $"pmc{SessionId}");
-            nullResult.Add("suites", saveProvider.LoadProfile(SessionId).Suits);
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(nullResult), Request, Response);
+            Dictionary<string, object> packetResult = new Dictionary<string, object>();
+            packetResult.Add("_id", $"pmc{SessionId}");
+            packetResult.Add("suites", saveProvider.LoadProfile(SessionId).Suits);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packetResult), Request, Response);
         }
 
         [Route("client/friend/request/list/inbox")]
@@ -557,6 +563,29 @@ namespace SIT.WebServer.Controllers
             var packets = new List<Dictionary<string, object>>();
             packets.Add(packet);
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packets), Request, Response);
+        }
+
+        [Route("client/match/group/current")]
+        [HttpPost]
+        public async void GroupCurrent(int? retry, bool? debug)
+        {
+            Dictionary<string, object> packet = new();
+            packet.Add("squad", new JArray());
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
+
+        [Route("client/quest/list")]
+        [HttpPost]
+        public async void QuestList(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
+        }
+
+        [Route("client/repeatalbeQuests/activityPeriods")]
+        [HttpPost]
+        public async void RepeatableQuestList(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
         }
     }
 }

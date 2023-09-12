@@ -238,6 +238,21 @@ namespace SIT.WebServer.Providers
             [JsonProperty("insurance")]
             public JArray Insurance { get; set; } = new();
 
+            [JsonProperty("aki")]
+            public JObject Aki { get; set; } = new();
+
+            [JsonProperty("vitality")]
+            public JObject Vitality { get; set; } = new();
+
+            [JsonProperty("inraid")]
+            public JObject InRaid { get; set; } = new();
+
+            [JsonProperty("traderPurchases")]
+            public JObject TraderPurchases { get; set; } = new();
+
+            [JsonProperty("userbuilds")]
+            public JObject UserBuilds { get; set; } = new();
+
             //public class ProfileCharacterModel
             //{
 

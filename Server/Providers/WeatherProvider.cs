@@ -11,8 +11,8 @@
         public class WeatherClass
         {
             public int acceleration { get; set; } = 7;
-            public string time { get; set; } = TimeSpan.FromDays(1).ToString("hh:mm");
-            public string date { get; set; }
+            public string time { get; set; } = TimeSpan.FromDays(1).ToString();
+            public string date { get; set; } = DateTime.Now.ToString();
             public Weather weather { get; set; }
 
             public class Weather {

@@ -61,6 +61,7 @@ namespace SIT.WebServer
             builder.Services.AddSession();
 
             var app = builder.Build();
+
             //app.UseRequestDecompression();
             // Configure the HTTP request pipeline.
             //if (app.Environment.IsDevelopment())
