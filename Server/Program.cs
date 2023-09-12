@@ -1,5 +1,6 @@
 
 using Newtonsoft.Json;
+using SIT.WebServer.Middleware;
 using SIT.WebServer.Providers;
 using System.Diagnostics;
 using System.Net;
@@ -70,6 +71,8 @@ namespace SIT.WebServer
                 app.UseSwaggerUI();
             }
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
+            app.UseMiddleware<RequestZlibMiddleware>();
+            app.UseMiddleware<RequestLoggingMiddleware>();
             app.Use(async (context, next) =>
             {
                 if (context.Request.Path.ToString().StartsWith("/notifierServer/getwebsocket"))
@@ -99,6 +102,50 @@ namespace SIT.WebServer
             app.Run();
 
             SaveProvider saveProvider = new SaveProvider(); 
+        }
+
+        public class RequestLoggingMiddleware
+        {
+            private readonly RequestDelegate _next;
+
+            public RequestLoggingMiddleware(RequestDelegate next)
+            {
+                _next = next;
+            }
+
+            public async Task InvokeAsync(HttpContext context)
+            {
+                var startTime = DateTime.Now;
+
+                await _next(context);
+
+                var endTime = DateTime.Now;
+                var elapsedTime = endTime - startTime;
+
+                var logMessage = $"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode} {elapsedTime.TotalMilliseconds}ms";
+                Console.WriteLine(logMessage);
+                Debug.WriteLine(logMessage);
+            }
+        }
+
+        public class RequestZlibMiddleware
+        {
+            private readonly RequestDelegate _next;
+
+            public RequestZlibMiddleware(RequestDelegate next)
+            {
+                _next = next;
+            }
+
+            public async Task InvokeAsync(HttpContext context)
+            {
+                var startTime = DateTime.Now;
+
+                //var requestBody = await HttpBodyConverters.DecompressRequestBodyToBytes(context.Request);
+                //context.Request.Body = new MemoryStream(requestBody);
+
+                await _next(context);
+            }
         }
 
         private static async Task Echo(WebSocket webSocket)

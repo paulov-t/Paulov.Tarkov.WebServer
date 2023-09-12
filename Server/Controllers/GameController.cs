@@ -587,5 +587,63 @@ namespace SIT.WebServer.Controllers
         {
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
         }
+
+        [Route("player/health/sync")]
+        [HttpPost]
+        public async void HealthSync(int? retry, bool? debug)
+        {
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JObject()), Request, Response);
+        }
+
+        [Route("/client/items/prices/{traderId}")]
+        [HttpPost]
+        public async void ItemPricesForTraderId(int? retry, bool? debug)
+        {
+            var tradingProvider = new TradingProvider();
+            Dictionary<string, int> handbookPrices = tradingProvider.GetStaticPrices();
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            packet.Add("supplyNextTime", 0);
+            packet.Add("prices", handbookPrices);
+            packet.Add("currencyCourses", 
+                new Dictionary<string, object>() { }
+
+                
+                );
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
+
+        [Route("/client/trading/api/getTraderAssort/{traderId}")]
+        [HttpPost]
+        public async void GetTraderAssort(int? retry, bool? debug, string traderId)
+        {
+            var tradingProvider = new TradingProvider();
+
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            packet.Add("nextResupply", 1000000);
+            packet.Add("items", new JArray());
+            packet.Add("barter_scheme", new Dictionary<string, object>() { });
+            packet.Add("loyal_level_items", new Dictionary<string, object>() { });
+
+            if (traderId == "ragfair")
+            {
+                await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+                return;
+            }
+
+            var trader = tradingProvider.GetTraderById(traderId);
+            packet["items"] = trader.Assort["items"];
+            packet["barter_scheme"] = trader.Assort["barter_scheme"];
+            packet["loyal_level_items"] = trader.Assort["loyal_level_items"];
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
+
+        [Route("/client/game/profile/items/moving")]
+        [HttpPost]
+        public async void ItemsMoving(int? retry, bool? debug)
+        {
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
     }
 }

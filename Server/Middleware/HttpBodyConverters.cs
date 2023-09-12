@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO.Compression;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -13,6 +14,39 @@ namespace SIT.WebServer.Middleware
 {
     public static class HttpBodyConverters
     {
+        public static async Task<byte[]> DecompressRequestBodyToBytes(HttpRequest request)
+        {
+            if (!request.Body.CanSeek)
+                request.EnableBuffering();
+
+            request.Body.Position = 0;
+            var reader = new StreamReader(request.Body, Encoding.UTF8);
+            var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+            request.Body.Position = 0;
+
+            // This is the only way to handle Zlib versus Standard Json calls
+            try
+            {
+                using ZLibStream zLibStream = new ZLibStream(request.Body, CompressionMode.Decompress);
+                byte[] buffer = new byte[4096];
+                await zLibStream.ReadAsync(buffer, 0, buffer.Length);
+                return buffer;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                Debug.WriteLine(ex.ToString());
+            }
+
+            try
+            {
+                return Encoding.UTF8.GetBytes(body);
+            }
+            catch
+            {
+                return null;
+            }
+        }
         public static async Task<Dictionary<string, object>> DecompressRequestBodyToDictionary(HttpRequest request)
         {
             if (!request.Body.CanSeek)
