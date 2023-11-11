@@ -712,18 +712,38 @@ namespace SIT.WebServer.Controllers
 
                                     //queueData.ProfileChanges.Add(new MongoID(true), new Changes() { Stash = new StashChanges() { del = new List<Items>() } });
 
-                                    foreach (var it in processSellTradeData.items)
+                                    for (var iIt = 0; iIt < processSellTradeData.items.Count(); iIt++)
+                                    //foreach (var it in processSellTradeData.items)
                                     {
+                                        var it = processSellTradeData.items[iIt];   
                                         var itemIdToFind = it.id.Trim();
                                         var inv = (JToken)pmcProfile["Inventory"];
                                         var invItems = (JArray)inv["items"];
-                                        foreach (var invItem in invItems)
+                                        //foreach (var invItem in invItems)
+                                        var deletedItemsCount = 0;
+                                        for(var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
                                         {
+                                            var invItem = invItems[iInvItem];
                                             var _id = invItem["_id"].ToString().Trim();
                                             var _tpl = invItem["_tpl"].ToString().Trim();
                                             if (_id == itemIdToFind || _id == itemIdToFind)
                                             {
+                                                Debug.WriteLine($"selling {_id} {_tpl}");
+                                                if (!queueData.ProfileChanges.ContainsKey(sessionId))
+                                                    queueData.ProfileChanges.Add(sessionId, new Changes());
 
+                                                if (queueData.ProfileChanges[sessionId].Stash == null)
+                                                {
+                                                    queueData.ProfileChanges[sessionId].Stash = new StashChanges()
+                                                    {
+                                                        del = new Items[processSellTradeData.items.Length]
+                                                    };
+                                                }
+
+                                                queueData.ProfileChanges[sessionId].Stash.del[iIt] = (new Items() { _id = _id, _tpl = _tpl, location = invItem["location"].ToObject<UnparsedData>(), parentId = invItem["parentId"].ToString(), slotId = invItem["slotId"].ToString() });
+                                                deletedItemsCount++;
+                                                if (deletedItemsCount == processSellTradeData.items.Length)
+                                                    break;
                                             }
                                         }
                                     }
@@ -741,6 +761,12 @@ namespace SIT.WebServer.Controllers
                             break;
                     }
 
+                }
+
+
+                foreach(var kvpProfileChanges in queueData.ProfileChanges)
+                {
+                    saveProvider.ProcessProfileChanges(kvpProfileChanges.Key, kvpProfileChanges.Value);
                 }
 
 
