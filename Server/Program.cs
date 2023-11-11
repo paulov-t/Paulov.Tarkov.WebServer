@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
 
 namespace SIT.WebServer
@@ -16,6 +17,14 @@ namespace SIT.WebServer
 
         public static void Main(string[] args)
         {
+            var assemblyMods = new List<Assembly>();
+            // Load Mods
+            foreach (var file in Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Mods")).Select(x => new FileInfo(x)))
+            {
+                if (file.Extension == ".dll")
+                    assemblyMods.Add(Assembly.LoadFile(file.FullName));
+            }
+
             var pathToHttpConfig = Path.Combine(AppContext.BaseDirectory, "assets", "configs", "http.json");
             var httpConfigSettings = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(pathToHttpConfig));
 
@@ -58,10 +67,24 @@ namespace SIT.WebServer
 
 
             builder.Services.AddDistributedMemoryCache();
-            builder.Services.AddMvc().AddSessionStateTempDataProvider();
+            var mvc = builder.Services.AddMvc().AddSessionStateTempDataProvider();
+
+            // ---------------------------------------------------------------
+            // Add Assembly Mods which use MVC Controllers to the MVC handler
+            foreach (var assemblyMod in assemblyMods) 
+            {
+                if (assemblyMod.GetTypes().Any(x => x.BaseType?.Name == "Controller"))
+                {
+                    mvc.AddApplicationPart(assemblyMod);
+                }
+            }
+            //
+            // ---------------------------------------------------------------
             builder.Services.AddSession();
 
             var app = builder.Build();
+
+         
 
             //app.UseRequestDecompression();
             // Configure the HTTP request pipeline.
@@ -73,6 +96,22 @@ namespace SIT.WebServer
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
             //app.UseMiddleware<RequestZlibMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
+            // -------------------------------------
+            // Handle Mods
+            //app.Use(async (context, next) =>
+            //{
+            //    foreach (var assembly in assemblyMods)
+            //    {
+            //        var assemblyTypes = assembly.GetTypes();
+            //        foreach (var controllerType in assemblyTypes.Where(x => x.BaseType?.Name == "Controller"))
+            //        {
+            //            controllerType.
+            //        }
+            //    }
+            //    await next(context);
+            //});
+            //
+            // -------------------------------------
             app.Use(async (context, next) =>
             {
                 if (context.Request.Path.ToString().StartsWith("/notifierServer/getwebsocket"))

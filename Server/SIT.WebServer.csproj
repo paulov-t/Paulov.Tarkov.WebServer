@@ -63,9 +63,13 @@
 
 	<ItemGroup>
 	  <Folder Include="Helpers\" />
+	  <Folder Include="Mods\" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="..\Mods\SIT.FilesSupplier\bin\Debug\net7.0\SIT.FilesSupplier.dll" Link="Mods\SIT.FilesSupplier.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="assets\database\playerScav.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
