@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc.Formatters;
+﻿using EFT;
+using EFT.InventoryLogic;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.WebServer.BSG;
 using System.Dynamic;
-using System.Net.WebSockets;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using MongoID = SIT.WebServer.BSG.MongoID;
 
 namespace SIT.WebServer.Providers
 {
@@ -74,7 +75,7 @@ namespace SIT.WebServer.Providers
             if(sessionId == null) return null;
 
             var prof = Profiles[sessionId] as ProfileModel;
-            CleanIdsOfInventory(prof);
+            //CleanIdsOfInventory(prof);
 
             return prof;
         }
@@ -214,6 +215,66 @@ namespace SIT.WebServer.Providers
                 }
           
 
+        }
+
+        public List<Items> GetProfileInventoryItems(string sessionId)
+        {
+            var pmcProfile = GetPmcProfile(sessionId);
+            var inv = (JToken)pmcProfile["Inventory"];
+            List<Items> items = new List<Items>();
+            var invItems = (JArray)inv["items"];
+            foreach (var item in invItems)
+            {
+                items.Add(item.ToObject<Items>());
+            }
+
+            return items;
+        }
+
+        public void ProcessProfileChanges(string sessionId, Changes changes)
+        {
+            if (!Profiles.ContainsKey(sessionId))
+                return;
+
+            var invItems = GetProfileInventoryItems(sessionId);
+
+            if (changes.Stash != null)
+            {
+                if(changes.Stash.del != null)
+                {
+
+                    foreach (var d in changes.Stash.del)
+                    {
+                        var itemToRemoveWithChildren = FindAndReturnChildrenByItems(invItems, d._id);
+                        foreach(var child in itemToRemoveWithChildren)
+                        {
+                            invItems.Remove(child);
+                        }
+                    }
+                }
+            }
+
+            var prof = Profiles[sessionId] as ProfileModel;
+            var pmcProfile = GetPmcProfile(sessionId);
+            var inv = (JToken)pmcProfile["Inventory"];
+            inv["items"] = JArray.FromObject(invItems);
+            SaveProfile(sessionId, prof);
+
+        }
+
+        public List<Items> FindAndReturnChildrenByItems(List<Items> items, string itemId)
+        {
+            List<Items> result = new List<Items>(); 
+            foreach (var item in items)
+            {
+                if(item.parentId == itemId)
+                {
+                    result.AddRange(FindAndReturnChildrenByItems(items, itemId));
+                }
+            }
+
+            result.Add(items.Find(x => x._id == itemId));
+            return result;
         }
 
         public class ProfileModel : DynamicObject
