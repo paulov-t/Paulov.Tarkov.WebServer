@@ -44,16 +44,23 @@ namespace SIT.WebServer.Providers
 
             var handbookTemplateItems = handbookTemplates["Items"] as JArray;
 
-            Dictionary<string, dynamic> templateDictionary = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(templates); 
+            Dictionary<string, JObject> templateDictionary = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(templates); 
             foreach(var template in templateDictionary)
             {
-                if(template.Value._type == "Item")
+                if (template.Value == null)
+                    continue;
+
+                if (!((JObject)template.Value).TryGetValue("_type", out var typeObj))
+                    continue;
+
+                if (typeObj.ToString() == "Item")
                 {
                     if(!StaticPrices.ContainsKey(template.Key))
                     {
                         if (handbookTemplateItems.Any(x => x["Id"].ToString() == template.Key))
                         {
-                            StaticPrices.Add(template.Key, int.Parse(handbookTemplateItems.Single(x => x["Id"].ToString() == template.Key)["Price"].ToString()));
+                            if(!StaticPrices.ContainsKey(template.Key))
+                                StaticPrices.Add(template.Key, int.Parse(handbookTemplateItems.Single(x => x["Id"].ToString() == template.Key)["Price"].ToString()));
                         }
                         else
                         {
@@ -68,12 +75,32 @@ namespace SIT.WebServer.Providers
 
         internal Trader GetTraderById(string traderId)
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "assort.json"), out JObject assort);
+            var assortJsonPath = Path.Combine("traders", traderId, "assort.json");
+            DatabaseProvider.TryLoadDatabaseFile(assortJsonPath, out JObject assort);
             DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "base.json"), out JObject b);
             DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "dialogue.json"), out JObject dialogue);
             DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "questassort.json"), out JObject questAssort);
 
-            return new Trader(assort, b, dialogue, questAssort);
+            var traderAssortment = assort.ToObject<EFT.TraderAssortment>();
+            var trader = new Trader(traderAssortment, b, dialogue, questAssort);
+
+            return trader;
+        }
+
+        internal EFT.TraderAssortment GetTraderAssortmentById(string traderId, string profileId)
+        {
+            var baseTraderAssort = GetTraderById(traderId).Assort;
+
+            var saveProvider = new SaveProvider();
+            var profile = saveProvider.LoadProfile(profileId);
+            //var pmcProfile = saveProvider.GetPmcProfile(profileId);
+
+            var resultTraderAssort = new EFT.TraderAssortment();
+            foreach(var lli in baseTraderAssort.LoyaltyLevelItems)
+            {
+                
+            }
+            return resultTraderAssort;
         }
 
         public enum EMoney
@@ -85,7 +112,7 @@ namespace SIT.WebServer.Providers
 
         public class Trader
         {
-            public Trader(in JObject assort, in JObject ba, in JObject dialogue, in JObject questAssort) 
+            public Trader(in EFT.TraderAssortment assort, in JObject ba, in JObject dialogue, in JObject questAssort) 
             { 
                 Assort = assort;
                 Base = ba;
@@ -93,7 +120,7 @@ namespace SIT.WebServer.Providers
                 QuestAssort = questAssort;
             }
 
-            public JObject Assort { get; set; }
+            public EFT.TraderAssortment Assort { get; set; }
             public JObject Base { get; set; }
             public JObject Dialogue { get; set; }
             public JObject QuestAssort { get; set; }

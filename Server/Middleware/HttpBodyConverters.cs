@@ -74,15 +74,12 @@ namespace SIT.WebServer.Middleware
                 Debug.WriteLine(ex.ToString());
             }
 
-            try
-            {
+
+            if(body.StartsWith('{') || body.StartsWith('['))
                 return JsonConvert.DeserializeObject<Dictionary<string, object>>(body);
-            }
-            catch
-            {
-                return null;
-            }
-          
+
+            return null;
+
         }
 
         public static async Task<(string, dynamic)> DecompressRequestBody(HttpRequest request)

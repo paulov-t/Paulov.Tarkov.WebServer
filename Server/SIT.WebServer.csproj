@@ -16,6 +16,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Content Remove="assets\database\playerScav.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Assembly-CSharp">
+	    <HintPath>References\Assembly-CSharp.dll</HintPath>
+	  </Reference>
 	  <Reference Include="bsg.componentace.compression.libs.zlib">
 	    <HintPath>References\bsg.componentace.compression.libs.zlib.dll</HintPath>
 	  </Reference>
@@ -25,10 +32,34 @@
 	  <Reference Include="bsg.system.buffers">
 	    <HintPath>References\bsg.system.buffers.dll</HintPath>
 	  </Reference>
+	  <Reference Include="Comfort">
+	    <HintPath>References\Comfort.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Comfort.Unity">
+	    <HintPath>References\Comfort.Unity.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Sirenix.Serialization">
+	    <HintPath>References\Sirenix.Serialization.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Sirenix.Serialization.Config">
+	    <HintPath>References\Sirenix.Serialization.Config.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Sirenix.Utilities">
+	    <HintPath>References\Sirenix.Utilities.dll</HintPath>
+	  </Reference>
+	  <Reference Include="websocket-sharp">
+	    <HintPath>References\websocket-sharp.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="Helpers\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="assets\database\playerScav.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

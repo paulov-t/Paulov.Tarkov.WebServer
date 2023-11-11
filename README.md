@@ -10,4 +10,4 @@ An Escape From Tarkov Web Server written from the ground up in .NET Web API desi
 
 ## Status
 
-**NOTHING WORKS**
+**NOTHING WORKS - Can only get to the main menu**

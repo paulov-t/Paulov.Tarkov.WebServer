@@ -9,6 +9,7 @@ using System.Dynamic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
+using static BackendSession0;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SIT.WebServer.Controllers
@@ -304,7 +305,7 @@ namespace SIT.WebServer.Controllers
             pmcData["Customization"] = pmcCustomizationInfo;
 
             profile.Characters["pmc"] = pmcData;
-            profile.Characters["scav"] = pmcData;
+            profile.Characters["scav"] = null;
             profile.Info["wipe"] = false;
 
             saveProvider.CleanIdsOfInventory(profile);
@@ -616,33 +617,81 @@ namespace SIT.WebServer.Controllers
         [HttpPost]
         public async void GetTraderAssort(int? retry, bool? debug, string traderId)
         {
+            var saveProvider = new SaveProvider();
+            var profile = saveProvider.LoadProfile(SessionId);
             var tradingProvider = new TradingProvider();
 
-            Dictionary<string, object> packet = new Dictionary<string, object>();
-            packet.Add("nextResupply", 1000000);
-            packet.Add("items", new JArray());
-            packet.Add("barter_scheme", new Dictionary<string, object>() { });
-            packet.Add("loyal_level_items", new Dictionary<string, object>() { });
+            //Dictionary<string, object> packet = new Dictionary<string, object>();
+            EFT.TraderAssortment traderAssortment = new EFT.TraderAssortment();
+            traderAssortment.Items = new List<Items>().ToArray();
+            traderAssortment.BarterScheme = new Dictionary<string, EFT.BarterScheme>();
+            traderAssortment.LoyaltyLevelItems = new Dictionary<string, int>();
+
+            //packet.Add("nextResupply", 1000000);
+            //packet.Add("items", new JArray());
+            //packet.Add("barter_scheme", new Dictionary<string, object>() { });
+            //packet.Add("loyal_level_items", new Dictionary<string, object>() { });
 
             if (traderId == "ragfair")
             {
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+                await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(traderAssortment), Request, Response);
                 return;
             }
 
             var trader = tradingProvider.GetTraderById(traderId);
-            packet["items"] = trader.Assort["items"];
-            packet["barter_scheme"] = trader.Assort["barter_scheme"];
-            packet["loyal_level_items"] = trader.Assort["loyal_level_items"];
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+            var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, SessionId);
+            //var loyalLevelItems = trader.Assort["loyal_level_items"];
+
+
+            //packet["items"] = trader.Assort["items"];
+            //packet["barter_scheme"] = trader.Assort["barter_scheme"];
+            //packet["loyal_level_items"] = trader.Assort["loyal_level_items"];
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(traderAssortment), Request, Response);
         }
 
         [Route("/client/game/profile/items/moving")]
         [HttpPost]
         public async void ItemsMoving(int? retry, bool? debug)
         {
-            Dictionary<string, object> packet = new Dictionary<string, object>();
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            JArray data = (JArray)requestBody["data"];
+            foreach(var actionData in data)
+            {
+                var action = actionData["Action"].ToString();
+
+                JToken item;
+                if (actionData["item"] != null)
+                    item = actionData["item"];
+
+                JToken to;
+                if (actionData["to"] != null)
+                    to = actionData["to"];
+
+                switch (action)
+                {
+                    case "Move":
+                        
+
+                        break;
+                }
             
+            }
+
+
+            QueueData queueData = new QueueData();
+            queueData.ProfileChanges = new Dictionary<string, Changes>();
+            queueData.InventoryWarnings = new InventoryWarning[0];
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(queueData), Request, Response);
+        }
+
+        [Route("/client/checkVersion")]
+        [HttpPost]
+        public async void CheckVersion(int? retry, bool? debug)
+        {
+            Dictionary<string, object> packet = new Dictionary<string, object>();
+            packet.Add("isValid", true);
+            packet.Add("latestVersion", "");
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
         }
     }

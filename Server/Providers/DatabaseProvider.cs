@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 
 namespace SIT.WebServer.Providers
 {
@@ -23,10 +24,11 @@ namespace SIT.WebServer.Providers
             {
                 using (var readerLanguagesJsonTR = new JsonTextReader(readerLanguagesJson))
                 {
-                    var serializer = new JsonSerializer();
+                    var serializer = new Newtonsoft.Json.JsonSerializer();
                     return serializer.Deserialize<T>(readerLanguagesJsonTR);
                 }
             }
+            //return System.Text.Json.JsonDocument.Parse(File.ReadAllText(path)).Deserialize<T>();
         }
 
 
@@ -42,6 +44,7 @@ namespace SIT.WebServer.Providers
             locales = new();
             localesDict = new();
             languages = StreamFileToType<Dictionary<string, object>>(Path.Combine(localesPath, "languages.json"));
+            //languages = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(localesPath, "languages.json"))).Deserialize<Dictionary<string, object>>();
 
             string basePath = localesPath;
             var dirs = Directory.GetDirectories(localesPath);
@@ -99,9 +102,29 @@ namespace SIT.WebServer.Providers
             bool result = false;
 
             var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
+            //var jsonDocument = System.Text.Json.JsonDocument.Parse(File.ReadAllText(filePath));
+
+            //dbFile = jsonDocument.Deserialize<JObject>(); // JObject.Parse(File.ReadAllText(filePath));
+            if (!File.Exists(filePath))
+            {
+                dbFile = null;
+                return false;
+            }
 
             dbFile = JObject.Parse(File.ReadAllText(filePath));
             result = dbFile != null;
+            return result;
+        }
+
+        public static bool TryLoadDatabaseFile(
+        in string databaseFilePath,
+        out JsonDocument jsonDocument)
+        {
+            bool result = false;
+
+            var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
+            jsonDocument = System.Text.Json.JsonDocument.Parse(filePath);
+            result = jsonDocument != null;
             return result;
         }
 
@@ -125,7 +148,6 @@ namespace SIT.WebServer.Providers
             bool result = false;
 
             var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
-
             stringTemplates = File.ReadAllText(filePath);
             result = stringTemplates != null;
             return result;

@@ -71,7 +71,7 @@ namespace SIT.WebServer
                 app.UseSwaggerUI();
             }
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
-            app.UseMiddleware<RequestZlibMiddleware>();
+            //app.UseMiddleware<RequestZlibMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
             app.Use(async (context, next) =>
             {
@@ -80,8 +80,27 @@ namespace SIT.WebServer
                     if (context.WebSockets.IsWebSocketRequest)
                     {
                         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("")), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
-                        await Echo(webSocket);
+                        if(webSocket == null)
+                        {
+                            await next(context);
+                            return;
+                        }
+
+                        if(webSocket.State != WebSocketState.Open)
+                        {
+                            await next(context);
+                            return;
+                        }
+
+                        try
+                        {
+                            await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("")), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
+                            await Echo(webSocket);
+                        }
+                        catch
+                        {
+
+                        }
                     }
                     else
                     {
@@ -128,25 +147,25 @@ namespace SIT.WebServer
             }
         }
 
-        public class RequestZlibMiddleware
-        {
-            private readonly RequestDelegate _next;
+        //public class RequestZlibMiddleware
+        //{
+        //    private readonly RequestDelegate _next;
 
-            public RequestZlibMiddleware(RequestDelegate next)
-            {
-                _next = next;
-            }
+        //    public RequestZlibMiddleware(RequestDelegate next)
+        //    {
+        //        _next = next;
+        //    }
 
-            public async Task InvokeAsync(HttpContext context)
-            {
-                var startTime = DateTime.Now;
+        //    public async Task InvokeAsync(HttpContext context)
+        //    {
+        //        var startTime = DateTime.Now;
 
-                //var requestBody = await HttpBodyConverters.DecompressRequestBodyToBytes(context.Request);
-                //context.Request.Body = new MemoryStream(requestBody);
+        //        //var requestBody = await HttpBodyConverters.DecompressRequestBodyToBytes(context.Request);
+        //        //context.Request.Body = new MemoryStream(requestBody);
 
-                await _next(context);
-            }
-        }
+        //        await _next(context);
+        //    }
+        //}
 
         private static async Task Echo(WebSocket webSocket)
         {

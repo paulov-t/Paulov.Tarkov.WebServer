@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.WebServer.BSG;
@@ -65,7 +66,7 @@ namespace SIT.WebServer.Providers
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(Profiles[sessionId]));
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(Profiles[sessionId], Formatting.Indented));
         }
 
         public ProfileModel LoadProfile(string sessionId)
@@ -88,10 +89,17 @@ namespace SIT.WebServer.Providers
 
         public Dictionary<string, object> GetScavProfile(string sessionId)
         {
-            var prof = Profiles[sessionId] as ProfileModel;
-            var characters = prof.Characters;
-            var scavObject = characters["scav"];
-            return scavObject;
+            //var prof = Profiles[sessionId] as ProfileModel;
+            //var characters = prof.Characters;
+            //var scavObject = characters["scav"];
+            //return scavObject;
+
+            DatabaseProvider.TryLoadDatabaseFile("playerScav.json", out Dictionary<string, object> scav);
+            scav["aid"] = sessionId;
+            scav["id"] = "scav" + sessionId;
+            scav["_id"] = "scav" + sessionId;
+            JObject.FromObject(scav["Info"])["RegistrationDate"] = 1;
+            return scav;
         }
 
         private void CreateProfile(Dictionary<string, object> newProfileDetails)
