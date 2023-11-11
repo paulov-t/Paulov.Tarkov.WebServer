@@ -3,13 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Rewrite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SIT.WebServer.BSG;
 using SIT.WebServer.Middleware;
 using SIT.WebServer.Providers;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using static BackendSession0;
+using static SIT.WebServer.Providers.TradingProvider;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SIT.WebServer.Controllers
@@ -606,9 +609,11 @@ namespace SIT.WebServer.Controllers
             packet.Add("supplyNextTime", 0);
             packet.Add("prices", handbookPrices);
             packet.Add("currencyCourses", 
-                new Dictionary<string, object>() { }
-
-                
+                new Dictionary<string, object>() {
+                    { "5449016a4bdc2d6f028b456f", handbookPrices["5449016a4bdc2d6f028b456f"] },
+                    {  "569668774bdc2da2298b4568", handbookPrices["569668774bdc2da2298b4568"] },
+                    { "5696686a4bdc2da3298b456a", handbookPrices["5696686a4bdc2da3298b456a"] }
+                }
                 );
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
         }
@@ -653,35 +658,98 @@ namespace SIT.WebServer.Controllers
         [HttpPost]
         public async void ItemsMoving(int? retry, bool? debug)
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-
-            JArray data = (JArray)requestBody["data"];
-            foreach(var actionData in data)
-            {
-                var action = actionData["Action"].ToString();
-
-                JToken item;
-                if (actionData["item"] != null)
-                    item = actionData["item"];
-
-                JToken to;
-                if (actionData["to"] != null)
-                    to = actionData["to"];
-
-                switch (action)
-                {
-                    case "Move":
-                        
-
-                        break;
-                }
-            
-            }
-
-
             QueueData queueData = new QueueData();
             queueData.ProfileChanges = new Dictionary<string, Changes>();
             queueData.InventoryWarnings = new InventoryWarning[0];
+
+            try
+            {
+                var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+                var sessionId = SessionId;
+                var saveProvider = new SaveProvider();
+                var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+
+                JArray data = (JArray)requestBody["data"];
+                foreach (var actionData in data)
+                {
+                    var action = actionData["Action"].ToString();
+
+                    string type = null;
+                    if (actionData["type"] != null)
+                        type = actionData["type"].ToString();
+
+                    JToken item;
+                    if (actionData["item"] != null)
+                        item = actionData["item"];
+
+                    JToken to;
+                    if (actionData["to"] != null)
+                        to = actionData["to"];
+
+
+
+
+                    IEnumerable<JToken> items = null;
+                    if (actionData["items"] != null)
+                        items = actionData["items"].ToArray();
+
+                    switch (action)
+                    {
+                        case "Move":
+
+
+                            break;
+                        // Buying Selling from Trader
+                        case "TradingConfirm":
+                            if (items == null)
+                                break;
+
+                            switch (type)
+                            {
+                                case "sell_to_trader":
+
+                                    var processSellTradeData = actionData.ToObject<ProcessSellTradeRequestData>();
+
+                                    //queueData.ProfileChanges.Add(new MongoID(true), new Changes() { Stash = new StashChanges() { del = new List<Items>() } });
+
+                                    foreach (var it in processSellTradeData.items)
+                                    {
+                                        var itemIdToFind = it.id.Trim();
+                                        var inv = (JToken)pmcProfile["Inventory"];
+                                        var invItems = (JArray)inv["items"];
+                                        foreach (var invItem in invItems)
+                                        {
+                                            var _id = invItem["_id"].ToString().Trim();
+                                            var _tpl = invItem["_tpl"].ToString().Trim();
+                                            if (_id == itemIdToFind || _id == itemIdToFind)
+                                            {
+
+                                            }
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            break;
+                        // Buying an Offer from Flea
+                        case "RagFairBuyOffer":
+                            break;
+                        // The Sell All button after a Scav Raid
+                        case "SellAllFromSavage":
+                            break;
+                    }
+
+                }
+
+
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
+            
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(queueData), Request, Response);
         }
 

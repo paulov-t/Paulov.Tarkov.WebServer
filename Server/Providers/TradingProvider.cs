@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SIT.WebServer.Providers
 {
@@ -21,9 +22,9 @@ namespace SIT.WebServer.Providers
          out Dictionary<string, object> traderByTraderId)
         {
             traderByTraderId = new Dictionary<string, object>();
-            foreach(var traderDirectory in Directory.GetDirectories(TradersAssetPath).Select(x => new DirectoryInfo(x)))
+            foreach (var traderDirectory in Directory.GetDirectories(TradersAssetPath).Select(x => new DirectoryInfo(x)))
             {
-                if(traderDirectory.Name.Contains("ragfair"))
+                if (traderDirectory.Name.Contains("ragfair"))
                     continue;
 
                 traderByTraderId.Add(traderDirectory.Name, JObject.Parse(File.ReadAllText(Path.Combine(traderDirectory.FullName, "base.json"))));
@@ -39,13 +40,13 @@ namespace SIT.WebServer.Providers
             if (!DatabaseProvider.TryLoadItemTemplates(out var templates))
                 return StaticPrices;
 
-            if(!DatabaseProvider.TryLoadTemplateFile("handbook.json", out var handbookTemplates))
+            if (!DatabaseProvider.TryLoadTemplateFile("handbook.json", out var handbookTemplates))
                 return StaticPrices;
 
             var handbookTemplateItems = handbookTemplates["Items"] as JArray;
 
-            Dictionary<string, JObject> templateDictionary = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(templates); 
-            foreach(var template in templateDictionary)
+            Dictionary<string, JObject> templateDictionary = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(templates);
+            foreach (var template in templateDictionary)
             {
                 if (template.Value == null)
                     continue;
@@ -55,11 +56,11 @@ namespace SIT.WebServer.Providers
 
                 if (typeObj.ToString() == "Item")
                 {
-                    if(!StaticPrices.ContainsKey(template.Key))
+                    if (!StaticPrices.ContainsKey(template.Key))
                     {
                         if (handbookTemplateItems.Any(x => x["Id"].ToString() == template.Key))
                         {
-                            if(!StaticPrices.ContainsKey(template.Key))
+                            if (!StaticPrices.ContainsKey(template.Key))
                                 StaticPrices.Add(template.Key, int.Parse(handbookTemplateItems.Single(x => x["Id"].ToString() == template.Key)["Price"].ToString()));
                         }
                         else
@@ -96,11 +97,13 @@ namespace SIT.WebServer.Providers
             //var pmcProfile = saveProvider.GetPmcProfile(profileId);
 
             var resultTraderAssort = new EFT.TraderAssortment();
-            foreach(var lli in baseTraderAssort.LoyaltyLevelItems)
+            foreach (var lli in baseTraderAssort.LoyaltyLevelItems)
             {
-                
+
             }
-            return resultTraderAssort;
+            baseTraderAssort.NextResupply = 1631489718;
+            baseTraderAssort.ExchangeRate = 1;
+            return baseTraderAssort;
         }
 
         public enum EMoney
@@ -112,8 +115,8 @@ namespace SIT.WebServer.Providers
 
         public class Trader
         {
-            public Trader(in EFT.TraderAssortment assort, in JObject ba, in JObject dialogue, in JObject questAssort) 
-            { 
+            public Trader(in EFT.TraderAssortment assort, in JObject ba, in JObject dialogue, in JObject questAssort)
+            {
                 Assort = assort;
                 Base = ba;
                 Dialogue = dialogue;
@@ -124,6 +127,23 @@ namespace SIT.WebServer.Providers
             public JObject Base { get; set; }
             public JObject Dialogue { get; set; }
             public JObject QuestAssort { get; set; }
+        }
+
+        public class ProcessSellTradeRequestData
+        {
+            public string Action { get; set; } = "sell_to_trader";
+            public string type { get; set; }
+            public string tid { get; set; }
+            public string price { get; set; }
+            public TradeItem[] items { get; set; }
+
+        }
+
+        public class TradeItem
+        {
+            public string id { get; set; }
+            public int count { get; set; }
+            public string scheme_id { get; set; }
         }
     }
 }
