@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SIT.WebServer", "Server\SIT.WebServer.csproj", "{23743417-164D-46C6-9C5D-0E0291EE9BFC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{557E9812-536E-48A8-9C69-F4FD125BC882} = {557E9812-536E-48A8-9C69-F4FD125BC882}
+		{68DF7FD7-A626-4F88-A410-5B2B8DC86308} = {68DF7FD7-A626-4F88-A410-5B2B8DC86308}
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844} = {BA120EAE-CC52-4B89-B71E-8911F2D7E844}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CA8F4A15-DD8B-4F74-BAE4-932538080B30}"
 	ProjectSection(SolutionItems) = preProject
@@ -12,7 +17,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SIT.Vanilla", "Mods\SIT.Vanilla\SIT.Vanilla.csproj", "{557E9812-536E-48A8-9C69-F4FD125BC882}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIT.FilesSupplier", "Mods\SIT.FilesSupplier\SIT.FilesSupplier.csproj", "{68DF7FD7-A626-4F88-A410-5B2B8DC86308}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SIT.FilesSupplier", "Mods\SIT.FilesSupplier\SIT.FilesSupplier.csproj", "{68DF7FD7-A626-4F88-A410-5B2B8DC86308}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIT.Coop", "Mods\SIT.Coop\SIT.Coop.csproj", "{BA120EAE-CC52-4B89-B71E-8911F2D7E844}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIT.BSGHelperLibrary", "SIT.BSGHelperLibrary\SIT.BSGHelperLibrary.csproj", "{56E337DF-55F3-4011-BA7E-9E1251D122AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +41,14 @@ Global
 		{68DF7FD7-A626-4F88-A410-5B2B8DC86308}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68DF7FD7-A626-4F88-A410-5B2B8DC86308}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68DF7FD7-A626-4F88-A410-5B2B8DC86308}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56E337DF-55F3-4011-BA7E-9E1251D122AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56E337DF-55F3-4011-BA7E-9E1251D122AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56E337DF-55F3-4011-BA7E-9E1251D122AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56E337DF-55F3-4011-BA7E-9E1251D122AF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
