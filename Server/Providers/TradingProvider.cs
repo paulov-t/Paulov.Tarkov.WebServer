@@ -139,6 +139,25 @@ namespace SIT.WebServer.Providers
 
         }
 
+        public class ProcessTo
+        {
+            public string id { get; set; }
+            public string container { get; set; }
+            public ProcessToLocation location { get; set; }
+            public bool isSearched { get; set; }
+
+        }
+
+        public class ProcessToLocation
+        {
+            public int x { get; set; }
+            public int y { get; set; }
+            public string r { get; set; }
+            public string rotation { get; set; }
+            public bool isSearched { get; set; }
+
+        }
+
         public class TradeItem
         {
             public string id { get; set; }
