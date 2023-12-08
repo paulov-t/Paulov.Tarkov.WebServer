@@ -15,6 +15,7 @@ namespace SIT.WebServer
     {
         public static string publicIp { get; set; } = new HttpClient().GetStringAsync("https://api.ipify.org").Result;
 
+        public static Dictionary<string, WebSocket> WebSockets { get; } = new Dictionary<string, WebSocket>();
         public static void Main(string[] args)
         {
             var assemblyMods = new List<Assembly>();
@@ -93,7 +94,8 @@ namespace SIT.WebServer
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
+            //app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
+            app.UseWebSockets();
             //app.UseMiddleware<RequestZlibMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
             // -------------------------------------
@@ -114,18 +116,29 @@ namespace SIT.WebServer
             // -------------------------------------
             app.Use(async (context, next) =>
             {
+                if (context.Request.Path.ToString().StartsWith("/client/game/logout"))
+                {
+                }
+
+                await next(context);
+            });
+            app.Use(async (context, next) =>
+            {
                 if (context.Request.Path.ToString().StartsWith("/notifierServer/getwebsocket"))
                 {
                     if (context.WebSockets.IsWebSocketRequest)
                     {
-                        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
                         if(webSocket == null)
                         {
                             await next(context);
                             return;
                         }
 
-                        if(webSocket.State != WebSocketState.Open)
+                        if(!WebSockets.ContainsKey(context.Connection.Id))
+                            WebSockets.Add(context.Connection.Id, webSocket);
+
+                        if (webSocket.State != WebSocketState.Open)
                         {
                             await next(context);
                             return;
@@ -133,12 +146,12 @@ namespace SIT.WebServer
 
                         try
                         {
-                            await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("")), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
-                            await Echo(webSocket);
+                            webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("")), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None).GetAwaiter().GetResult();
+                            //await Echo(webSocket);
                         }
                         catch
                         {
-
+                            
                         }
                     }
                     else

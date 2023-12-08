@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using EFT;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Rewrite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SIT.BSGHelperLibrary;
 using SIT.WebServer.BSG;
 using SIT.WebServer.Middleware;
 using SIT.WebServer.Providers;
@@ -62,6 +64,7 @@ namespace SIT.WebServer.Controllers
         }
 
         [Route("client/game/config")]
+        [Route("client/game/configuration")]
         [HttpPost]
         public async void GameConfig(int? retry, bool? debug)
         {
@@ -135,9 +138,17 @@ namespace SIT.WebServer.Controllers
         [HttpPost]
         public async void Globals(int? retry, bool? debug)
         {
-            if (DatabaseProvider.TryLoadGlobals(out var items))
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
+            //if (DatabaseProvider.TryLoadGlobals(out var items))
+            //    await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
 
+
+            // Arena
+            //Dictionary<string, object> globalsArena = new Dictionary<string, object>();
+
+            if (DatabaseProvider.TryLoadGlobalsArena(out var items))
+            {
+                await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
+            }
         }
 
         [Route("client/trading/api/traderSettings")]
@@ -403,10 +414,22 @@ namespace SIT.WebServer.Controllers
 
             foreach (var kvp in locations)
             {
+                response.Add(kvp.Key, (Dictionary<string, object>)kvp.Value["base.json"]);
 
+                // Arena stuff
+                if (!response[kvp.Key].ContainsKey("AvailableModes"))
+                {
+                    response[kvp.Key].Add("AvailableModes", new JObject());
+                }
+
+                if (!response[kvp.Key].ContainsKey("AudioSettings"))
+                {
+                    response[kvp.Key].Add("AudioSettings", new JObject());
+                }
             }
 
-
+            Debug.WriteLine(response.SITToJson());
+            Console.WriteLine(response.SITToJson());
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
         }
 
@@ -505,7 +528,7 @@ namespace SIT.WebServer.Controllers
 
         }
 
-        
+
 
         //
         //
@@ -608,7 +631,7 @@ namespace SIT.WebServer.Controllers
             Dictionary<string, object> packet = new Dictionary<string, object>();
             packet.Add("supplyNextTime", 0);
             packet.Add("prices", handbookPrices);
-            packet.Add("currencyCourses", 
+            packet.Add("currencyCourses",
                 new Dictionary<string, object>() {
                     { "5449016a4bdc2d6f028b456f", handbookPrices["5449016a4bdc2d6f028b456f"] },
                     {  "569668774bdc2da2298b4568", handbookPrices["569668774bdc2da2298b4568"] },
@@ -660,6 +683,7 @@ namespace SIT.WebServer.Controllers
         {
             QueueData queueData = new QueueData();
             queueData.ProfileChanges = new Dictionary<string, Changes>();
+
             queueData.InventoryWarnings = new InventoryWarning[0];
 
             try
@@ -668,6 +692,28 @@ namespace SIT.WebServer.Controllers
                 var sessionId = SessionId;
                 var saveProvider = new SaveProvider();
                 var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+
+
+                if (!queueData.ProfileChanges.ContainsKey(sessionId))
+                    queueData.ProfileChanges.Add(sessionId, new Changes()
+                    {
+                        EquipmentBuilds = new EquipmentBuild[0],
+                        Experience = 0,// int.Parse(((JToken)pmcProfile.Item2["Info"])["Experience"].ToString()),
+                        HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
+                        //Improvements = new Dictionary<string, GClass1830>(),
+                        Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
+                        Quests = new QuestTemplate[0],
+                        QuestsStatus = new StatusData[0],
+                        RagFairOffers = new EFT.UI.Ragfair.Offer[0],
+                        RepeatableQuests = new QuestRange[0],
+                        //Skills = new EFT.SkillManager(EFT.EPlayerSide.Usec),
+                        Stash = new StashChanges() { change = new Items[0], del = new Items[0], @new = new Items[0] },
+                        TradersData = new Dictionary<string, EFT.TraderData>(),
+                        UnlockedRecipes = new Dictionary<string, bool>(),
+                        WeaponBuilds = new WeaponBuilds[0]
+                    });
+
+
 
                 JArray data = (JArray)requestBody["data"];
                 foreach (var actionData in data)
@@ -686,9 +732,6 @@ namespace SIT.WebServer.Controllers
                     if (actionData["to"] != null)
                         to = actionData["to"];
 
-
-
-
                     IEnumerable<JToken> items = null;
                     if (actionData["items"] != null)
                         items = actionData["items"].ToArray();
@@ -696,7 +739,7 @@ namespace SIT.WebServer.Controllers
                     switch (action)
                     {
                         case "Move":
-
+                            DoItemsMovingAction_Move(queueData, actionData);
 
                             break;
                         // Buying Selling from Trader
@@ -715,13 +758,13 @@ namespace SIT.WebServer.Controllers
                                     for (var iIt = 0; iIt < processSellTradeData.items.Count(); iIt++)
                                     //foreach (var it in processSellTradeData.items)
                                     {
-                                        var it = processSellTradeData.items[iIt];   
+                                        var it = processSellTradeData.items[iIt];
                                         var itemIdToFind = it.id.Trim();
                                         var inv = (JToken)pmcProfile["Inventory"];
                                         var invItems = (JArray)inv["items"];
                                         //foreach (var invItem in invItems)
                                         var deletedItemsCount = 0;
-                                        for(var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
+                                        for (var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
                                         {
                                             var invItem = invItems[iInvItem];
                                             var _id = invItem["_id"].ToString().Trim();
@@ -729,18 +772,18 @@ namespace SIT.WebServer.Controllers
                                             if (_id == itemIdToFind || _id == itemIdToFind)
                                             {
                                                 Debug.WriteLine($"selling {_id} {_tpl}");
-                                                if (!queueData.ProfileChanges.ContainsKey(sessionId))
-                                                    queueData.ProfileChanges.Add(sessionId, new Changes());
 
-                                                if (queueData.ProfileChanges[sessionId].Stash == null)
+                                                queueData.ProfileChanges[sessionId].Stash = new StashChanges()
                                                 {
-                                                    queueData.ProfileChanges[sessionId].Stash = new StashChanges()
-                                                    {
-                                                        del = new Items[processSellTradeData.items.Length]
-                                                    };
-                                                }
+                                                    @new = new Items[0],
+                                                    change = new Items[0],
+                                                    del = new Items[processSellTradeData.items.Length]
+                                                };
 
-                                                queueData.ProfileChanges[sessionId].Stash.del[iIt] = (new Items() { _id = _id, _tpl = _tpl, location = invItem["location"].ToObject<UnparsedData>(), parentId = invItem["parentId"].ToString(), slotId = invItem["slotId"].ToString() });
+                                                var l = new UnparsedData() { JToken = invItem["location"] };
+                                                //var delItem = (new Items() { _id = itemIdToFind, _tpl = _tpl, location = l, parentId = invItem["parentId"].ToString(), slotId = invItem["slotId"].ToString() });
+                                                var delItem = (new Items() { _id = itemIdToFind });
+                                                queueData.ProfileChanges[sessionId].Stash.del[iIt] = delItem;
                                                 deletedItemsCount++;
                                                 if (deletedItemsCount == processSellTradeData.items.Length)
                                                     break;
@@ -764,7 +807,7 @@ namespace SIT.WebServer.Controllers
                 }
 
 
-                foreach(var kvpProfileChanges in queueData.ProfileChanges)
+                foreach (var kvpProfileChanges in queueData.ProfileChanges)
                 {
                     saveProvider.ProcessProfileChanges(kvpProfileChanges.Key, kvpProfileChanges.Value);
                 }
@@ -775,8 +818,47 @@ namespace SIT.WebServer.Controllers
             {
                 Debug.WriteLine(e);
             }
-            
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(queueData), Request, Response);
+
+            var queueDataJson = JsonConvert.SerializeObject(queueData);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(queueDataJson, Request, Response);
+        }
+
+        private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
+        {
+            var sessionId = SessionId;
+            var saveProvider = new SaveProvider();
+            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+
+            var inv = (JToken)pmcProfile["Inventory"];
+            var invItems = (JArray)inv["items"];
+            var itemIdToFind = actionData["item"].ToString();
+            for (var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
+            {
+                var invItem = invItems[iInvItem];
+                var _id = invItem["_id"].ToString().Trim();
+                var _tpl = invItem["_tpl"].ToString().Trim();
+                if (_id == itemIdToFind || _id == itemIdToFind)
+                {
+                    Debug.WriteLine($"moving {_id} {_tpl}");
+                    var matchedInvItem = invItem;
+                    var m = matchedInvItem["parentId"];// = moveRequest.to.id;
+
+                    var to = actionData["to"].ToObject<ProcessTo>();
+                    matchedInvItem["slotId"] = to.container;
+                    matchedInvItem["parentId"] = to.id;
+                    if (to.location != null)
+                    {
+                        matchedInvItem["location"] = JToken.Parse(to.location.ToJson());
+                    }
+                    else
+                    {
+                        matchedInvItem["location"] = null;
+                    }
+                    invItems[iInvItem] = matchedInvItem;
+                }
+            }
+            saveProvider.SaveProfile(sessionId);
+            //saveProvider.SaveProfile(sessionId, pmcProfile);
         }
 
         [Route("/client/checkVersion")]
@@ -787,6 +869,21 @@ namespace SIT.WebServer.Controllers
             packet.Add("isValid", true);
             packet.Add("latestVersion", "");
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packet), Request, Response);
+        }
+
+        [Route("client/profile/presets")]
+        [HttpPost]
+        public async void ProfilePresets(
+           [FromQuery] int? retry
+       , [FromQuery] bool? debug
+          )
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var result = new Dictionary<string, object>();
+            result.Add("Test", new { id = "test", availableCount = 1, availableUntil = int.MaxValue, experience = 1, isUnlocked = true });
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(result), Request, Response);
         }
     }
 }

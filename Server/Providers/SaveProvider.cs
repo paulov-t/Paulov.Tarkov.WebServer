@@ -85,6 +85,11 @@ namespace SIT.WebServer.Providers
             var prof = Profiles[sessionId] as ProfileModel;
             var characters = prof.Characters;
             var pmcObject = characters["pmc"];
+
+            // Add Arena
+            if (!pmcObject.ContainsKey("Presets"))
+                pmcObject.Add("Presets", new JObject());
+
             return pmcObject;
         }
 

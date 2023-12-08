@@ -201,7 +201,20 @@ namespace SIT.WebServer.Providers
         public static bool TryLoadGlobals(
          out Dictionary<string, object> globals)
         {
-            return TryLoadDatabaseFile("globals.json", out globals);
+            //return TryLoadDatabaseFile("globals.json", out globals);
+            return TryLoadDatabaseFile("globalsArena.json", out globals);
+        }
+
+        public static bool TryLoadGlobalsArena(
+         out Dictionary<string, object> globals)
+        {
+            var result = TryLoadDatabaseFile("globals.json", out globals);
+            result = TryLoadDatabaseFile("globalsArena.json", out Dictionary<string, object> globalsArena);
+            globals.Add("GlobalsArena", globalsArena);
+            globals.Add("GameModes",
+                new Dictionary<string, object>()
+                );
+            return result;
         }
 
         public static bool TryLoadLocations(

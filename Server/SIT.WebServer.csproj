@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
@@ -16,6 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Content Remove="assets\database\globalsArena.json" />
 	  <Content Remove="assets\database\playerScav.json" />
 	</ItemGroup>
 
@@ -62,17 +63,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Helpers\" />
 	  <Folder Include="Mods\" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="..\Mods\SIT.Coop\bin\Debug\net7.0\SIT.Coop.dll" Link="Mods\SIT.Coop.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="..\Mods\SIT.FilesSupplier\bin\Debug\net7.0\SIT.FilesSupplier.dll" Link="Mods\SIT.FilesSupplier.dll">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	  <None Include="assets\database\globalsArena.json" />
 	  <None Include="assets\database\playerScav.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\SIT.BSGHelperLibrary\SIT.BSGHelperLibrary.csproj" />
 	</ItemGroup>
 
 </Project>

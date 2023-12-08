@@ -1,0 +1,15 @@
+{
+  "Ranks": {},
+  "RatingCoefficients": [],
+  "SettingObserver": {},
+  "SkillProgressRateArena": 1,
+  "WeaponSkillProgressRateArena": 1,
+  "AudioSettings": {},
+  "SearchingTimeoutEnabled": false,
+  "RankingModeAccessibility": [],
+  "GameModes": {
+    "Test": {
+
+    }
+  }
+}

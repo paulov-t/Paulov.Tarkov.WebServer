@@ -200,13 +200,15 @@ namespace SIT.WebServer.Middleware
                     //    //deflateStream.BaseStream.Flush();
                     //    //bytes = ((MemoryStream)deflateStream.BaseStream).ToArray();
                     //}
-                    var bytes = new byte[(1024 * 1024) * 50];
-                    Pooled9LevelZLib.CompressToBytesNonAlloc(stringToConvert, bytes);
-
+                    //var bytes = new byte[(1024 * 1024) * 50];
+                    //Pooled9LevelZLib.CompressToBytesNonAlloc(stringToConvert, bytes);
+                    var bytes = SimpleZlib.CompressToBytes(stringToConvert, 6);
+                    GC.AddMemoryPressure(bytes.Length);
                     var rom = new ReadOnlyMemory<byte>(bytes);
                     response.Headers.ContentLength = rom.Length;
                     await response.BodyWriter.WriteAsync(rom);
                     bytes = null;
+
                 }
                 else
                 {
