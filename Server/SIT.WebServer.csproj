@@ -67,6 +67,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="..\Mods\SIT.Arena\bin\Debug\net7.0\SIT.Arena.dll" Link="Mods\SIT.Arena.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="..\Mods\SIT.Coop\bin\Debug\net7.0\SIT.Coop.dll" Link="Mods\SIT.Coop.dll">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>

@@ -404,33 +404,36 @@ namespace SIT.WebServer.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            if (!DatabaseProvider.TryLoadLocations(out Dictionary<string, Dictionary<string, object>> locations))
+            if (!DatabaseProvider.TryLoadLocations(out Dictionary<string, Dictionary<string, object>> locationJsons))
             {
                 Response.StatusCode = 500;
                 return;
             }
 
-            Dictionary<string, Dictionary<string, object>> response = new();
+            JObject response = new JObject();
+            Dictionary<string, Dictionary<string, object>> locations = new();
 
-            foreach (var kvp in locations)
+            foreach (var kvp in locationJsons)
             {
-                response.Add(kvp.Key, (Dictionary<string, object>)kvp.Value["base.json"]);
+                locations.Add(kvp.Key, (Dictionary<string, object>)kvp.Value["base.json"]);
 
                 // Arena stuff
-                if (!response[kvp.Key].ContainsKey("AvailableModes"))
-                {
-                    response[kvp.Key].Add("AvailableModes", new JObject());
-                }
+                //if (!locations[kvp.Key].ContainsKey("AvailableModes"))
+                //{
+                //    locations[kvp.Key].Add("AvailableModes", new JObject());
+                //}
 
-                if (!response[kvp.Key].ContainsKey("AudioSettings"))
-                {
-                    response[kvp.Key].Add("AudioSettings", new JObject());
-                }
+                //if (!locations[kvp.Key].ContainsKey("AudioSettings"))
+                //{
+                //    locations[kvp.Key].Add("AudioSettings", new JObject());
+                //}
             }
 
-            Debug.WriteLine(response.SITToJson());
-            Console.WriteLine(response.SITToJson());
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
+            Debug.WriteLine(locations.SITToJson());
+            Console.WriteLine(locations.SITToJson());
+            response.Add("locations", JToken.FromObject(locations));
+
+            await HttpBodyConverters.CompressIntoResponseBodyBSG(response.SITToJson(), Request, Response);
         }
 
         [Route("client/weather")]
@@ -885,5 +888,24 @@ namespace SIT.WebServer.Controllers
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(result), Request, Response);
         }
+
+       
+
+       // [Route("client/arena/server/list")]
+       // [HttpPost]
+       // public async void ArenaServerList(
+       //    [FromQuery] int? retry
+       //, [FromQuery] bool? debug
+       //   )
+       // {
+       //     // -------------------------------
+       //     // ServerItem[]
+
+       //     var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+       //     var result = Array.Empty<object>();
+
+       //     await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(result), Request, Response);
+       // }
     }
 }

@@ -1,12 +1,31 @@
 {
-  "Ranks": {},
+  "Ranks": {
+    "None": {
+      "Name": "None",
+      "ArpRequirement": 0,
+      "ArpDowngradeValue": 0
+    }
+  },
   "RatingCoefficients": [],
   "SettingObserver": {},
   "SkillProgressRateArena": 1,
   "WeaponSkillProgressRateArena": 1,
   "AudioSettings": {},
   "SearchingTimeoutEnabled": false,
-  "RankingModeAccessibility": [],
+  "RankingModeAccessibility": [
+    {
+      "Mode": "Unranked",
+      "IsEnabled": true
+    },
+    {
+      "Mode": "Ranked",
+      "IsEnabled": true
+    },
+    {
+      "Mode": "Custom",
+      "IsEnabled": true
+    }
+  ],
   "GameModes": {
     "Test": {
 

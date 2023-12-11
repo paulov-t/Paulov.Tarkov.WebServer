@@ -90,6 +90,20 @@ namespace SIT.WebServer.Providers
             if (!pmcObject.ContainsKey("Presets"))
                 pmcObject.Add("Presets", new JObject());
 
+            if (!pmcObject.ContainsKey("RankInfo"))
+                pmcObject.Add("RankInfo", new JObject());
+
+            var info = JObject.Parse(JsonConvert.SerializeObject(pmcObject["Info"]));
+            if (!info.ContainsKey("RankInfo"))
+            {
+                //var rankInfo = new JObject();
+                ////new RankInfo() { id = "None", points = new Dictionary<string, int>() };
+                //rankInfo.Add(new { id = "None", points = new JObject() });
+                //info.Add("RankInfo", rankInfo);
+            }
+            //if (pmcObject["Info"]. == null)
+            //    pmcObject["Info"].RankInfo = new JObject();
+
             return pmcObject;
         }
 
